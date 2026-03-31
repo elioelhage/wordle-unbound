@@ -306,6 +306,7 @@ footer p {
 }
 
 .modal-box {
+  position: relative;
   width: min(100%, 420px);
   background: #111827;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -313,6 +314,22 @@ footer p {
   border-radius: 22px;
   text-align: center;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.modal-box .close-btn {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #9aa4b2;
+  transition: color 0.2s;
+}
+
+.modal-box .close-btn:hover {
+  color: #fff;
 }
 
 .modal-box h2 {
@@ -381,7 +398,6 @@ footer p {
    ========================= */
 
 @media (max-width: 768px) {
-
   body {
     padding: 0;
   }
@@ -409,7 +425,6 @@ footer p {
     display: none;
   }
 
-  /* GRID SCALING */
   .grid {
     gap: 6px;
     margin-top: 6px;
@@ -425,7 +440,6 @@ footer p {
     font-size: 1.2rem;
   }
 
-  /* KEYBOARD */
   .keyboard {
     margin-top: auto;
     padding: 6px;
@@ -445,7 +459,6 @@ footer p {
     flex: 1.4;
   }
 
-  /* MESSAGE + BADGE */
   #message-board {
     font-size: 0.85rem;
     min-height: 22px;
@@ -456,7 +469,6 @@ footer p {
     padding: 2px 6px;
   }
 
-  /* MODAL */
   .modal-box {
     width: 90%;
     padding: 16px;
@@ -548,7 +560,6 @@ footer p {
 
 /* EXTRA SMALL PHONES */
 @media (max-width: 380px) {
-
   .tile {
     width: 38px;
     height: 38px;
