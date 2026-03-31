@@ -4,53 +4,26 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#121213" />
-  <title>The Stupid Wordle</title>
-  <link rel="icon" href="puzzle.png"
+  <title>Wordle Mobile Clone</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <div class="brand">
-        <div class="brand__icon" aria-hidden="true">
-          <svg viewBox="0 0 64 64" role="img" aria-hidden="true">
-            <rect width="64" height="64" rx="14"></rect>
-            <rect x="12" y="12" width="16" height="16" rx="4"></rect>
-            <rect x="36" y="12" width="16" height="16" rx="4" class="brand__tile--muted"></rect>
-            <rect x="12" y="36" width="16" height="16" rx="4" class="brand__tile--muted"></rect>
-            <rect x="36" y="36" width="16" height="16" rx="4"></rect>
-          </svg>
-        </div>
-
-        <div class="brand__text">
-          <p class="eyebrow">Daily Word</p>
-          <h1>The Stupid Wordle</h1>
-          <p class="byline">Made by Elio El Hage</p>
-        </div>
+      <div class="topbar__left">
+        <p class="eyebrow">Daily Word</p>
+        <h1>WORDLE</h1>
       </div>
 
-      <div class="topbar__actions">
-        <button id="hint-button" class="icon-button" type="button" aria-label="Show a hint">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="9"></circle>
-            <path d="M12 16.5v.1"></path>
-            <path d="M9.8 9.3a2.4 2.4 0 1 1 3.5 2.1c-.9.5-1.3 1-1.3 2v.3"></path>
-          </svg>
-        </button>
-
-        <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to light mode">
-          <svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
-        </button>
-      </div>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to light mode">
+        <svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
+      </button>
     </header>
 
     <main class="game" id="game">
-      <section class="status-card" aria-label="Game info">
-        <p id="meta-line" class="meta-line">5 letters · 6 tries</p>
-
-        <div id="tap-tip" class="tip-banner" aria-live="polite">
-          <span>Tap the board or keyboard to type.</span>
-          <button id="dismiss-tip" class="tip-close" type="button" aria-label="Dismiss tip">×</button>
-        </div>
+      <section class="status-card">
+        <p id="status-line" class="status-line">Tap the board or keyboard to type.</p>
+        <p id="meta-line" class="meta-line"></p>
       </section>
 
       <section class="board-wrap" aria-label="Word board">
