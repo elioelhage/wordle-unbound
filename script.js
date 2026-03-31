@@ -198,14 +198,15 @@ function startGame() {
   updateGrid();
 
   if (gameOver) {
-    const winState = savedState?.won === true;
-    showEndModal(winState);
-  }
+  const winState = savedState?.won === true;
+  showEndModal(winState);
+}
 
   bindEvents();
 }
 
 function bindEvents() {
+	document.getElementById("close-modal").addEventListener("click", hideEndModal);
   if (eventsBound) return;
   eventsBound = true;
 
@@ -557,7 +558,7 @@ function showEndModal(won) {
   endTitle.textContent = won ? "You got it." : `The word was ${solution}`;
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
-  startCountdown();
+  startCountdown(); // This calls update() immediately
 }
 
 function hideEndModal() {
