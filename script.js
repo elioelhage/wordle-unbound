@@ -19,7 +19,8 @@
   ];
   const DAILY_WORDS = safeWords.filter(obj => obj.word && /^[a-zA-Z]+$/.test(obj.word));
   
-  const launchDate = Date.UTC(2026, 2, 31);
+  // Note: In JavaScript, months are 0-indexed! So 3 = April.
+  const launchDate = Date.UTC(2026, 3, 2);
   const boardEl = document.getElementById("board");
   const keyboardEl = document.getElementById("keyboard");
   const messageEl = document.getElementById("message");
