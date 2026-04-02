@@ -83,6 +83,7 @@
   let wordCategory = "";
   let wordLength = 0;
   let maxRows = 0;
+  let maxHints = 2; // Will update after fetch
 
   const storageKey = `wordle-mobile-${solutionIndex}`;
   const themeKey = "wordle-mobile-theme";
@@ -132,8 +133,8 @@
 
     wordLength = solution.length;
     maxRows = wordLength <= 5 ? 6 : wordLength + 1;
+    maxHints = wordLength >= 7 ? 3 : 2; // Dynamic 3rd hint for 7+ letters
 
-    // --- NEW: SYNC STATE FROM DATABASE ON LOAD ---
     const userData = getUserData();
     if (userData.username) {
       try {
@@ -154,7 +155,6 @@
             if (!localIsCurrent) {
               localStorage.setItem(storageKey, JSON.stringify(dbState));
             } else {
-              // Both are for today. Take the one with more progress
               const localProgress = localState.currentRow + (localState.gameOver ? 1 : 0);
               const dbProgress = dbState.currentRow + (dbState.gameOver ? 1 : 0);
               if (dbProgress > localProgress) {
@@ -290,6 +290,9 @@
     if (logoutBtn) logoutBtn.addEventListener("click", logoutLeaderboardAccount);
     closeModal.addEventListener("click", hideEndModal);
 
+    // Initialize global tooltip portal (so tooltips are not clipped by modal/tab overflow)
+    initGlobalTooltips();
+
     leaderboardBtn.addEventListener("click", openLeaderboard);
     closeLeaderboardBtn.addEventListener("click", () => leaderboardModal.classList.add("hidden"));
 
@@ -315,7 +318,6 @@
             alert("Notifications are disabled in your browser. Please allow them.");
             return;
           } else {
-            // Confirm to user
             new Notification("Notifications Enabled!", {
               body: `We'll remind you ${pref}.`,
               icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236aaa64'/></svg>"
@@ -353,7 +355,6 @@
       saveUsernameBtn.disabled = true;
 
       try {
-        // PULLING saved_state ON LOGIN FOR SYNC
         const { data: existingUser, error: fetchError } = await supabase
           .from('leaderboards')
           .select('uuid, password, saved_state')
@@ -368,10 +369,9 @@
             userData.username = name;
             localStorage.setItem(userKey, JSON.stringify(userData));
 
-            // Apply state sync cleanly if it exists
             if (existingUser.saved_state && existingUser.saved_state.solutionIndex === solutionIndex) {
                localStorage.setItem(storageKey, JSON.stringify(existingUser.saved_state));
-               window.location.reload(); // Reload seamlessly
+               window.location.reload(); 
                return;
             }
           } else {
@@ -420,6 +420,77 @@
         loadLeaderboardData(e.target.dataset.tab);
       });
     });
+  }
+
+  // Create a tooltip element appended to document.body and show/hide/position on hover
+  function initGlobalTooltips() {
+    let tt = document.createElement("div");
+    tt.id = "global-tooltip";
+    tt.className = "global-tooltip";
+    document.body.appendChild(tt);
+
+    let activeEl = null;
+    let hideTimeout = null;
+
+    document.addEventListener("mouseover", (e) => {
+      const el = e.target.closest && e.target.closest(".has-tooltip");
+      if (!el) return;
+      activeEl = el;
+      const text = el.getAttribute("data-tooltip") || "";
+      if (!text) return;
+      tt.textContent = text;
+      tt.style.display = "block";
+      // small timeout to allow styles & measurement
+      requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        // default to right-side placement, but if near right edge, place left
+        const ttRect = tt.getBoundingClientRect();
+        let left = rect.right + 10;
+        let top = rect.top + (rect.height / 2) - (ttRect.height / 2);
+        if (left + ttRect.width > window.innerWidth - 8) {
+          left = rect.left - ttRect.width - 10;
+        }
+        if (top < 8) top = 8;
+        if (top + ttRect.height > window.innerHeight - 8) top = window.innerHeight - ttRect.height - 8;
+        tt.style.left = `${Math.max(8, left)}px`;
+        tt.style.top = `${top}px`;
+        tt.classList.add("show");
+      });
+    });
+
+    document.addEventListener("mouseout", (e) => {
+      if (!activeEl) return;
+      const related = e.relatedTarget;
+      if (related && activeEl.contains(related)) return;
+      tt.classList.remove("show");
+      clearTimeout(hideTimeout);
+      hideTimeout = setTimeout(() => { tt.style.display = "none"; }, 120);
+      activeEl = null;
+    });
+
+    // Also support touch (tap) to show briefly on mobile
+    document.addEventListener("touchstart", (e) => {
+      const el = e.target.closest && e.target.closest(".has-tooltip");
+      if (!el) return;
+      const text = el.getAttribute("data-tooltip") || "";
+      if (!text) return;
+      tt.textContent = text;
+      tt.style.display = "block";
+      requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        const ttRect = tt.getBoundingClientRect();
+        let left = rect.right + 10;
+        let top = rect.top + (rect.height / 2) - (ttRect.height / 2);
+        if (left + ttRect.width > window.innerWidth - 8) left = rect.left - ttRect.width - 10;
+        tt.style.left = `${Math.max(8, left)}px`;
+        tt.style.top = `${Math.max(8, top)}px`;
+        tt.classList.add("show");
+      });
+      setTimeout(() => {
+        tt.classList.remove("show");
+        tt.style.display = "none";
+      }, 2200);
+    }, { passive: true });
   }
 
   function openLeaderboard() {
@@ -487,6 +558,11 @@
       }
 
       const currentUser = getUserData().username;
+      
+      const medal1 = `<svg class="lb-medal" viewBox="0 0 24 24" fill="none" stroke="#b8860b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`;
+      const medal2 = `<svg class="lb-medal" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`;
+      const medal3 = `<svg class="lb-medal" viewBox="0 0 24 24" fill="none" stroke="#8b4513" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`;
+
       data.forEach((player, index) => {
         const li = document.createElement("li");
         li.className = "lb-item";
@@ -494,9 +570,18 @@
         else if (index === 1) li.classList.add("rank-2");
         else if (index === 2) li.classList.add("rank-3");
 
-        let medal = index === 0 ? "🥇 " : index === 1 ? "🥈 " : index === 2 ? "🥉 " : "";
+        let medal = index === 0 ? medal1 : index === 1 ? medal2 : index === 2 ? medal3 : "";
         const scoreVal = type === "avg" ? player.avg : (player.max_winstreak ?? player.winstreak ?? 0);
-        let hintBadge = player.last_hint_day_index === solutionIndex ? ` <span style="font-size: 0.85em; opacity: 0.9;" title="Used a hint today">💡</span>` : "";
+        
+        let hintBadge = "";
+        if (player.last_hint_day_index === solutionIndex) {
+          hintBadge = `
+            <span class="has-tooltip" data-tooltip="This user used hints to guess their word">
+              <svg class="lb-hint-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A6 6 0 1 0 7.5 11.5c.76.76 1.23 1.52 1.41 2.5"></path></svg>
+            </span>
+          `;
+        }
+
         let displayName = player.username + hintBadge;
         if (player.username === currentUser) displayName += " <i style='opacity: 0.6; font-weight: normal; font-size: 0.85em;'>(Me)</i>";
 
@@ -537,7 +622,7 @@
   }
 
   function updateHintBadge() {
-    const hintsLeft = 2 - hintsUsed;
+    const hintsLeft = maxHints - hintsUsed;
     hintBadge.textContent = Math.max(0, hintsLeft);
     if (hintsLeft <= 0) hintBadge.classList.add("empty");
     else hintBadge.classList.remove("empty");
@@ -593,12 +678,57 @@
 
       if (unrevealed.length > 0) {
         const randomHintLetter = unrevealed[Math.floor(Math.random() * unrevealed.length)];
-        showHintPopup("Letter hint", `The word contains the letter<br><span style="font-size:36px">${randomHintLetter}</span>`);
+        showHintPopup("Letter hint", `The word contains the letter<br><span style="font-size:36px; color: var(--present);">${randomHintLetter}</span>`);
+        hintsUsed++;
+        updateHintBadge();
+        saveState();
+
+        // Keyboard highlight animation logic
+        setTimeout(() => {
+          const keyEl = document.getElementById(`key-${randomHintLetter}`);
+          if (keyEl) {
+            keyEl.classList.add("hint-highlight-anim");
+            updateKeyboardColor(randomHintLetter, "present");
+            setTimeout(() => keyEl.classList.remove("hint-highlight-anim"), 1000);
+          }
+        }, 400);
+
+      } else {
+        showHintPopup("You're close!", "You've found all the letters —<br>now find their spots!");
+      }
+      return;
+    }
+
+    if (hintsUsed === 2 && maxHints === 3) {
+      // 3rd Hint (Only for 7 letter words): Eliminate 3 unused wrong letters
+      const keyboardKeys = "QWERTYUIOPASDFGHJKLZXCVBNM".split("");
+      const unguessedUnused = keyboardKeys.filter(k => {
+        const keyEl = document.getElementById(`key-${k}`);
+        const isGuessed = keyEl.classList.contains("correct") || keyEl.classList.contains("present") || keyEl.classList.contains("absent");
+        const inSolution = solution.includes(k);
+        return !isGuessed && !inSolution;
+      });
+
+      if (unguessedUnused.length >= 3) {
+        const toEliminate = unguessedUnused.sort(() => 0.5 - Math.random()).slice(0, 3);
+        
+        setTimeout(() => {
+          toEliminate.forEach(k => {
+            updateKeyboardColor(k, "absent");
+            const keyEl = document.getElementById(`key-${k}`);
+            if (keyEl) {
+              keyEl.classList.add("hint-eliminate-anim");
+              setTimeout(() => keyEl.classList.remove("hint-eliminate-anim"), 1000);
+            }
+          });
+        }, 400);
+
+        showHintPopup("Elimination", `Removed 3 incorrect letters<br>from your keyboard.`);
         hintsUsed++;
         updateHintBadge();
         saveState();
       } else {
-        showHintPopup("You're close!", "You've found all the letters —<br>now find their spots!");
+        showHintPopup("No more eliminations", "Not enough unused letters left<br>to eliminate.");
       }
     }
   }
@@ -653,8 +783,6 @@
         tile.classList.toggle("filled", Boolean(guess[c]));
         if (colors[c]) {
           tile.classList.add(colors[c]);
-          tile.style.color = "#fff";
-          tile.style.borderColor = "transparent";
         }
       }
     }
@@ -743,8 +871,6 @@
         window.setTimeout(() => {
           tile.classList.remove("flip");
           tile.classList.add(colors[i]);
-          tile.style.color = "#fff";
-          tile.style.borderColor = "transparent";
           updateKeyboardColor(guess[i], colors[i]);
         }, 220);
       }, i * 250);
@@ -860,7 +986,6 @@
     };
     localStorage.setItem(storageKey, JSON.stringify(state));
 
-    // --- NEW: UPLOAD STATE TO SUPABASE ---
     const userData = getUserData();
     if (userData.username) {
       supabase.from('leaderboards').update({ saved_state: state }).eq('uuid', userData.uuid).then(({error}) => {
@@ -888,13 +1013,11 @@
   if (hintButton) hintButton.addEventListener("click", showHint);
 
   document.addEventListener("keydown", (e) => {
-    // Stop the game from capturing keystrokes if you are typing in the login inputs
-    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    // BUG FIX: Ignore physical keystrokes if typing inside the login/register inputs
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
     
     if (gameOver || isSubmitting) return;
-    
-    // Safeguard against weird browser autofill events that have no key property
-    if (!e.key) return;
+    if (!e.key) return; // Safeguard against weird browser autofill events
 
     if (e.key === "Enter") handleKey("ENTER");
     else if (e.key === "Backspace") handleKey("⌫");
@@ -904,7 +1027,7 @@
     }
   });
 
-  window.addEventListener("keydown", (e) => { if (e.code === "Space") e.preventDefault(); });
+  window.addEventListener("keydown", (e) => { if (e.code === "Space" && e.target.tagName !== "INPUT") e.preventDefault(); });
   window.addEventListener("resize", () => boardEl.style.setProperty("--tile-size", computeTileSize() + "px"));
   modal.addEventListener("click", (e) => { if (e.target === modal) hideEndModal(); });
 

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#121213" />
-  <title>The Stupid Wordle</title>
+  <title>Wordle Unbound</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236aaa64'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='60' fill='white' font-family='sans-serif' font-weight='bold'>W</text></svg>" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -20,7 +20,7 @@
             <path d="M3 9h18"></path>
             <path d="M9 21V9"></path>
           </svg>
-          <h1>The Stupid Wordle</h1>
+          <h1>Wordle Unbound</h1>
         </div>
         <p class="author-credit">Made by Elio El Hage</p>
       </div>
@@ -55,6 +55,14 @@
 
         <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to light mode">
           <svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
+        </button>
+
+        <!-- MOVE: Leaderboard logout into the topbar so it doesn't collide with the modal close -->
+        <button id="leaderboard-logout-button" class="leaderboard-logout" type="button" aria-label="Log out" title="Log out" style="display:none;">
+          <svg viewBox="0 0 24 24">
+            <path d="M16 17l5-5-5-5M21 12H9"></path>
+            <path d="M13 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8"></path>
+          </svg>
         </button>
       </div>
     </header>
@@ -111,12 +119,7 @@
       <div id="stats-view" class="hidden">
         <div class="lb-header">
           <h2 class="modal__title">Leaderboards</h2>
-          <button id="leaderboard-logout-button" class="leaderboard-logout" type="button" aria-label="Log out">
-            <svg viewBox="0 0 24 24">
-              <path d="M16 17l5-5-5-5M21 12H9"></path>
-              <path d="M13 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8"></path>
-            </svg>
-          </button>
+          <!-- removed logout button from here -->
         </div>
         <div class="tabs">
           <button class="tab-btn active" data-tab="avg">Avg Guesses</button>

@@ -227,9 +227,9 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 .tile.filled { border-color: var(--tile-filled-border); }
 .tile.pop { animation: pop 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
-.tile.correct, .key.correct { background: var(--correct); border-color: var(--correct); color: #fff; }
-.tile.present, .key.present { background: var(--present); border-color: var(--present); color: #fff; }
-.tile.absent, .key.absent { background: var(--absent); border-color: var(--absent); color: #fff; }
+.tile.correct, .key.correct { background: var(--correct); border-color: var(--correct); color: #fff !important; }
+.tile.present, .key.present { background: var(--present); border-color: var(--present); color: #fff !important; }
+.tile.absent, .key.absent { background: var(--absent); border-color: var(--absent); color: #fff !important; }
 
 .message {
   margin: 0;
@@ -284,6 +284,7 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
 .key:active { transform: translateY(2px); background: var(--key-pressed); }
 .key:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Modal and Base Inputs */
 .modal {
   position: fixed;
   inset: 0;
@@ -306,166 +307,143 @@ button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color:
   position: relative;
 }
 
-.modal__kicker {
-  margin: 0 0 0.35rem;
-  color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
+.modal__kicker { margin: 0 0 0.35rem; color: var(--muted); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
 .modal__title { margin: 0; font-size: clamp(1.35rem, 4.8vw, 1.8rem); }
 .modal__countdown { min-height: 1.2rem; margin: 0.55rem 0 1rem; color: var(--muted); font-size: 0.96rem; }
 
-.primary-button {
-  width: 100%;
-  border: none;
-  border-radius: 14px;
-  background: var(--text);
-  color: var(--bg);
-  padding: 0.9rem 1rem;
-  font-weight: 800;
-  cursor: pointer;
-}
+.primary-button { width: 100%; border: none; border-radius: 14px; background: var(--text); color: var(--bg); padding: 0.9rem 1rem; font-weight: 800; cursor: pointer; }
 
-.close-top-right {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: var(--muted);
-  cursor: pointer;
-}
+.close-top-right { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 24px; color: var(--muted); cursor: pointer; }
 
-.text-input {
-  width: 100%;
-  padding: 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 1rem;
-  margin-top: 1rem;
-  font-family: inherit;
-}
+.text-input { width: 100%; padding: 0.8rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; margin-top: 1rem; font-family: inherit; }
 
 select.text-input {
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
   background-repeat: no-repeat;
   background-position: right 1rem center;
   background-size: 1em;
   padding-right: 2.5rem;
 }
 
-/* Leaderboard Additions */
-.leaderboard-card {
-  min-height: 350px;
-  display: flex;
-  flex-direction: column;
-}
+/* Leaderboard Specific Styling */
+.leaderboard-card { min-height: 350px; display: flex; flex-direction: column; }
+.tabs { display: flex; gap: 0.5rem; margin-top: 1rem; border-bottom: 2px solid var(--surface-2); padding-bottom: 0.5rem; }
+.tab-btn { flex: 1; background: none; border: none; color: var(--muted); font-size: 0.9rem; font-weight: 700; cursor: pointer; padding: 0.5rem; border-radius: 6px; transition: all 0.2s; }
+.tab-btn.active { background: var(--text); color: var(--bg); }
+.tab-content { flex: 1; margin-top: 1rem; overflow-y: auto; max-height: 250px; text-align: left; }
+.lb-loading { text-align: center; color: var(--muted); font-size: 0.9rem; margin-top: 2rem; }
+.lb-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.lb-item { display: flex; justify-content: space-between; align-items: center; background: var(--surface); padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; }
+.lb-item > div { display: flex; align-items: center; gap: 0.4rem; }
 
-.tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  border-bottom: 2px solid var(--surface-2);
-  padding-bottom: 0.5rem;
-}
+.lb-medal { width: 1.1rem; height: 1.1rem; margin-right: 0.4rem; vertical-align: text-bottom; }
 
-.tab-btn {
-  flex: 1;
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.tab-btn.active {
-  background: var(--text);
-  color: var(--bg);
-}
-
-.tab-content {
-  flex: 1;
-  margin-top: 1rem;
-  overflow-y: auto;
-  max-height: 250px;
-  text-align: left;
-}
-
-.lb-loading {
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.9rem;
-  margin-top: 2rem;
-}
-
-.lb-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.lb-item {
-  display: flex;
-  justify-content: space-between;
-  background: var(--surface);
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-/* Top 3 styling */
 .lb-item.rank-1 { background: linear-gradient(135deg, #ffd700 0%, #f9b700 100%); color: #1e1e1e; border: 1px solid #ffc800; box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3); }
 .lb-item.rank-2 { background: linear-gradient(135deg, #e0e0e0 0%, #c0c0c0 100%); color: #1e1e1e; border: 1px solid #b0b0b0; }
 .lb-item.rank-3 { background: linear-gradient(135deg, #cd7f32 0%, #b86f2c 100%); color: #1e1e1e; border: 1px solid #a05a1e; }
-.lb-item .rank { color: var(--muted); margin-right: 0.75rem; font-size: 0.85rem; }
+.lb-item .rank { color: var(--muted); margin-right: 0.5rem; font-size: 0.85rem; }
+.lb-item.rank-1 .rank { color: rgba(30, 30, 30, 0.6); } /* Darken rank text on yellow */
 .lb-item .score { color: var(--text); }
+.lb-item.rank-1 .score, .lb-item.rank-2 .score, .lb-item.rank-3 .score { color: #1e1e1e; }
 
-.lb-header {
-  display: flex;
-  align-items: center;
-  justify-content: grid;
-  gap: 180px;
-  margin-bottom: 0.8rem;
-}
+.lb-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; padding-right: 2.5rem; position: relative; }
+/* Make the left content (rank / medal / name) align items nicely */
+.lb-item { display: flex; justify-content: space-between; align-items: center; background: var(--surface); padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; }
+.lb-item > div { display: flex; align-items: center; gap: 0.4rem; }
 
-.leaderboard-logout {
-  width: 2.2rem;
-  height: 2.05rem;
-  border: none;
-  background: transparent;
-  color: #d32f2f;
-  display: grid;
+/* Hint tooltip wrapper — use inline-flex and center alignment */
+.has-tooltip { position: relative; display: inline-flex; align-items: center; gap: 0.28rem; cursor: help; }
+
+/* Tooltip placement: keep it from being clipped but center on the icon */
+.has-tooltip:hover::after {
+  content: attr(data-tooltip);
   position: absolute;
-  right: 40px;
-  place-items: right;
+  bottom: 140%;
+  right: -8px;
+  background: var(--text);
+  color: var(--bg);
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  pointer-events: none;
+  transform-origin: right center;
+}
+
+/* Remove old absolute positioning for logout and give it the same look as other icon buttons */
+.leaderboard-logout {
+  /* use icon-button visual language */
+  display: inline-grid;
+  place-items: center;
+  gap: 0;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
   cursor: pointer;
+  padding: 0;
+  flex: 0 0 auto;
 }
 
-.leaderboard-logout svg {
-  width: 1.2rem;
-  height: 1.2rem;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
+/* Keep svg inside sized similarly to other icon buttons */
+.leaderboard-logout svg { width: 1.05rem; height: 1.05rem; stroke: currentColor; fill: none; }
+
+/* Ensure the in-list hint pseudo tooltip is disabled — we'll use a portal tooltip so it can escape overflow/clipping */
+.has-tooltip::after { display: none !important; }
+
+/* Global tooltip (appended to body) — overrides everything so it won't be clipped */
+.global-tooltip {
+  position: fixed;
+  background: var(--text);
+  color: var(--bg);
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 9999;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.28);
+  pointer-events: none;
+  transform-origin: center;
+  opacity: 0;
+  transition: opacity 0.12s ease, transform 0.12s ease;
 }
 
-.leaderboard-logout:hover { opacity: 0.75; }
-.error-message { color: #d32f2f; margin-top: 0.5rem; font-size: 0.8rem; text-align: left; }
+/* Visible state */
+.global-tooltip.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Hint icon vertical centering tweaks */
+.lb-hint-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+  stroke: var(--text);
+  opacity: 0.9;
+}
+
+/* Keyboard Animations for Hints */
+@keyframes hintHighlight {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(201, 180, 88, 0.7); }
+  50% { transform: scale(1.15); box-shadow: 0 0 15px 5px rgba(201, 180, 88, 0); background-color: var(--present); color: white; border-color: var(--present); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(201, 180, 88, 0); }
+}
+.hint-highlight-anim { animation: hintHighlight 0.9s ease-out forwards; z-index: 10; position: relative; }
+
+@keyframes hintEliminate {
+  0% { transform: scale(1); background-color: var(--key-bg); }
+  50% { transform: scale(0.85); background-color: var(--absent); color: white; opacity: 0.6; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.hint-eliminate-anim { animation: hintEliminate 0.9s ease-out forwards; }
 
 @keyframes pop { 
   0% { transform: scale(0.85); opacity: 0.7; } 
