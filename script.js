@@ -107,7 +107,7 @@
 
   const storageKey = `wordle-mobile-${solutionIndex}`;
   const themeKey = "wordle-mobile-theme";
-  const userKey = "wordle-user-data"; 
+  const userKey = "wordle-user-data-v2"; 
 
   let currentRow = 0;
   let currentGuess = "";
