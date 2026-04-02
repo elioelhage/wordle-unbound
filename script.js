@@ -6,11 +6,7 @@
 
   const WORD_SOURCE = "supabase";
 
-  // ─── HINT PENALTY CONSTANTS (now unused, kept for reference) ─────────────
-  // const HINT_PENALTY_1 = 8;   // not used
-  // const HINT_PENALTY_2 = 15;  // not used
-  const GUESS_SCALE    = 10;  // multiply real guesses by this for DB storage
-  // ──────────────────────────────────────────────────────────────────────────
+  const GUESS_SCALE = 10;  // multiply real guesses by this for DB storage
 
   // Fallback word list (only used if supabase fails)
   const safeWords = typeof WORDS !== "undefined" ? WORDS : [
@@ -56,7 +52,19 @@
   const daysPassed = Math.max(0, Math.floor((localDateAsUTC - launchDate) / 86400000));
   
   if (WORD_SOURCE !== "supabase" && daysPassed >= DAILY_WORDS.length) {
-    document.body.innerHTML = "<h1 style='text-align:center; padding: 2rem; color: var(--text); font-family: sans-serif;'>We are out of words! Check back later.</h1>";
+    boardEl.innerHTML = `
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 1rem;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" style="width: 3rem; height: 3rem; margin-bottom: 1rem;">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <h2 style="margin: 0 0 0.5rem; color: var(--text);">Out of Words</h2>
+        <p style="margin: 0; color: var(--muted); font-size: 0.95rem;">We've exhausted the local dictionary. Check back tomorrow!</p>
+      </div>
+    `;
+    keyboardEl.style.opacity = "0.5";
+    keyboardEl.style.pointerEvents = "none";
     throw new Error("Word list exhausted.");
   }
 
@@ -112,10 +120,7 @@
   let hasSubmittedToLeaderboard = false;
 
   function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
+    return crypto.randomUUID();
   }
 
   function getUserData() {
@@ -282,17 +287,17 @@
     closeLeaderboardBtn.addEventListener("click", () => leaderboardModal.classList.add("hidden"));
     
     saveUsernameBtn.addEventListener("click", async () => {
-		const name = usernameInput.value.trim();
-		const rawPass = passwordInput.value.trim();
-		const pass = await hashPassword(rawPass); // Now 'pass' is a secure string of gibberish!
-      usernameError.classList.add("hidden");
+        const name = usernameInput.value.trim();
+        const rawPass = passwordInput.value.trim();
+        const pass = await hashPassword(rawPass); // Now 'pass' is a secure string of gibberish!
+        usernameError.classList.add("hidden");
       
       if (name.length < 3) {
         usernameError.textContent = "Name too short (min 3 characters)";
         usernameError.classList.remove("hidden");
         return;
       }
-      if (pass.length < 3) {
+      if (rawPass.length < 3) {
         usernameError.textContent = "Password too short (min 3 characters)";
         usernameError.classList.remove("hidden");
         return;
@@ -329,11 +334,12 @@
             { 
               uuid: userData.uuid, 
               username: name, 
-              password: pass, // Saving plain text since it's just a game for friends
+              password: pass, 
               games_played: 0, 
               total_guesses: 0, 
               winstreak: 0, 
-              max_winstreak: 0 
+              max_winstreak: 0,
+              total_hints: 0
             }
           ]);
           if (insertError) throw insertError;
@@ -391,10 +397,10 @@
       let data = [];
 
       if (type === "avg") {
-        // No minimum games filter
+        // Select total_hints added here
         const { data: res, error } = await supabase
           .from('leaderboards')
-          .select('username, games_played, total_guesses')
+          .select('username, games_played, total_guesses, total_hints')
           .order('games_played', { ascending: false });
         
         if (error) throw error;
@@ -407,9 +413,10 @@
         }
 
       } else if (type === "streak") {
+        // Select total_hints added here
         const { data: res, error } = await supabase
           .from('leaderboards')
-          .select('username, winstreak, max_winstreak')
+          .select('username, winstreak, max_winstreak, total_hints')
           .order('max_winstreak', { ascending: false })
           .limit(50);
           
@@ -428,6 +435,9 @@
         return;
       }
 
+      // Grab the current user's name so we can highlight them
+      const currentUser = getUserData().username;
+
       data.forEach((player, index) => {
         const li = document.createElement("li");
         li.className = "lb-item";
@@ -444,8 +454,21 @@
           ? player.avg
           : (player.max_winstreak ?? player.winstreak ?? 0);
         
+        // The Hint Badge: Only shows up if they have used at least 1 hint
+        let hintBadge = "";
+        if (player.total_hints > 0) {
+          hintBadge = ` <span style="font-size: 0.8em; opacity: 0.8;" title="${player.total_hints} hints used all-time">💡${player.total_hints}</span>`;
+        }
+
+        let displayName = player.username + hintBadge;
+
+        // Check if this row belongs to the person looking at the screen
+        if (player.username === currentUser) {
+          displayName += " <i style='opacity: 0.6; font-weight: normal; font-size: 0.85em;'>(Me)</i>";
+        }
+        
         li.innerHTML = `
-          <div><span class="rank">#${index + 1}</span> ${medal}${player.username}</div>
+          <div><span class="rank">#${index + 1}</span> ${medal}${displayName}</div>
           <div class="score">${scoreVal}</div>
         `;
 
@@ -460,14 +483,14 @@
     }
   }
 
-  // Updated stats – no hint penalties
-  async function updateUserStats(won, rawGuesses) {
+  // Updated stats – no hint penalties, but tracks total hints
+  async function updateUserStats(won, rawGuesses, hints) {
     if (hasSubmittedToLeaderboard) return;
     
     const userData = getUserData();
     if (!userData.username) return; 
 
-    const scaledGuesses = rawGuesses * GUESS_SCALE; // no penalty added
+    const scaledGuesses = rawGuesses * GUESS_SCALE; 
 
     try {
       const { data: userRecord, error: fetchError } = await supabase
@@ -476,10 +499,7 @@
         .eq('uuid', userData.uuid)
         .maybeSingle();
 
-      if (fetchError || !userRecord) {
-        console.error("Fetch error or no record:", fetchError);
-        return;
-      }
+      if (fetchError || !userRecord) return;
 
       const newWinstreak = won ? userRecord.winstreak + 1 : 0;
       const updates = {
@@ -487,17 +507,10 @@
         total_guesses: userRecord.total_guesses + scaledGuesses,
         winstreak: newWinstreak,
         max_winstreak: Math.max(newWinstreak, userRecord.max_winstreak ?? 0),
+        total_hints: (userRecord.total_hints || 0) + hints // <-- Adds the hints to their permanent record
       };
 
-      const { error: updateError } = await supabase
-        .from('leaderboards')
-        .update(updates)
-        .eq('uuid', userData.uuid);
-
-      if (updateError) {
-        console.error("Error updating stats:", updateError);
-        return;
-      }
+      await supabase.from('leaderboards').update(updates).eq('uuid', userData.uuid);
         
       hasSubmittedToLeaderboard = true;
       saveState();
@@ -717,7 +730,7 @@
     window.setTimeout(() => {
       if (guess === solution) {
         gameOver = true;
-        updateUserStats(true, currentRow + 1); 
+        updateUserStats(true, currentRow + 1, hintsUsed); // Passed hintsUsed here
         saveState(true);
         showMessage("Solved.");
         showEndModal(true);
@@ -730,7 +743,7 @@
 
       if (currentRow >= maxRows) {
         gameOver = true;
-        updateUserStats(false, maxRows); 
+        updateUserStats(false, maxRows, hintsUsed); // Passed hintsUsed here
         saveState(false);
         showMessage(`The word was ${solution}.`);
         showEndModal(false);
@@ -892,7 +905,7 @@
     countdownTimer = setInterval(update, 1000);
   }
 
-// Scrambles the password into a secure hash before sending to Supabase
+  // Scrambles the password into a secure hash before sending to Supabase
   async function hashPassword(password) {
     const msgBuffer = new TextEncoder().encode(password);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
