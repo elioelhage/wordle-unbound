@@ -103,7 +103,12 @@
 
   <div id="leaderboard-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal__card leaderboard-card">
-      <button id="close-leaderboard" class="close-top-right">×</button>
+      <button id="close-leaderboard" class="close-top-right" aria-label="Close leaderboard" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6 18 18"></path>
+          <path d="M18 6 6 18"></path>
+        </svg>
+      </button>
       
       <div id="username-view" class="hidden">
         <h2 class="modal__title">Join the Leaderboard</h2>

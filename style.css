@@ -475,12 +475,21 @@ select.text-input {
   background: color-mix(in srgb, var(--surface-2) 75%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   color: var(--text);
-  font-size: 1.35rem;
-  line-height: 1;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  appearance: none;
   padding: 0;
   transition: transform 0.16s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#close-leaderboard svg {
+  width: 1.03rem;
+  height: 1.03rem;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.6;
+  stroke-linecap: round;
 }
 
 #close-leaderboard:hover {
