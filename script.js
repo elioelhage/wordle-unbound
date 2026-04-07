@@ -611,7 +611,7 @@
       lbList.classList.remove("hidden");
 
       if (data.length === 0) {
-        lbList.innerHTML = `<li class="lb-item" style="justify-content:center; color: var(--muted); font-size:0.9rem;">No data found.</li>`;
+        lbList.innerHTML = `<li class="lb-item lb-empty">No data found.</li>`;
         return;
       }
 
@@ -640,17 +640,22 @@
           `;
         }
 
-        let displayName = player.username + hintBadge;
-        if (player.username === currentUser) displayName += " <i style='opacity: 0.6; font-weight: normal; font-size: 0.85em;'>(Me)</i>";
-
-        li.innerHTML = `<div><span class="rank">#${index + 1}</span> ${medal}${displayName}</div><div class="score">${scoreVal}</div>`;
+        const isCurrentUser = player.username === currentUser;
+        li.innerHTML = `
+          <div class="lb-left">
+            <span class="rank">#${index + 1}</span>
+            ${medal}
+            <span class="lb-name">${player.username}${hintBadge}${isCurrentUser ? " <span class='lb-self'>(Me)</span>" : ""}</span>
+          </div>
+          <div class="lb-score">${scoreVal}</div>
+        `;
         lbList.appendChild(li);
       });
     } catch (e) {
       console.error("Leaderboard Error", e);
       lbLoading.classList.add("hidden");
       lbList.classList.remove("hidden");
-      lbList.innerHTML = `<li class="lb-item" style="justify-content:center; color: var(--muted); font-size:0.9rem;">Failed to load.</li>`;
+      lbList.innerHTML = `<li class="lb-item lb-empty">Failed to load.</li>`;
     }
   }
 
