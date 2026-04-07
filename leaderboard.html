@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta name="theme-color" content="#121213" />
+	<title>Wordle Unbound • Leaderboards</title>
+	<style>
+		:root {
+			--bg: #f6f7fb;
+			--surface: #ffffff;
+			--surface-2: #eef1f7;
+			--text: #151821;
+			--muted: #6b7280;
+			--border: #dde3ef;
+			--accent: #6aaa64;
+			--accent-dark: #4f8e4b;
+			--shadow: 0 18px 45px rgba(18, 18, 19, 0.1);
+		}
+
+		* { box-sizing: border-box; }
+		html, body { margin: 0; padding: 0; }
+		body {
+			min-height: 100vh;
+			font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+			color: var(--text);
+			background:
+				radial-gradient(60rem 30rem at -10% -20%, rgba(106, 170, 100, 0.18), transparent 62%),
+				radial-gradient(54rem 28rem at 110% -20%, rgba(106, 170, 100, 0.12), transparent 62%),
+				var(--bg);
+			line-height: 1.4;
+		}
+
+		.page {
+			width: min(980px, 94vw);
+			margin: 1.3rem auto;
+		}
+
+		.top {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 1rem;
+			margin-bottom: 1rem;
+		}
+
+		.brand {
+			display: flex;
+			align-items: center;
+			gap: 0.7rem;
+		}
+
+		.brand-icon {
+			width: 2rem;
+			height: 2rem;
+			color: var(--accent);
+		}
+
+		.kicker {
+			margin: 0;
+			font-size: 0.75rem;
+			letter-spacing: 0.14em;
+			text-transform: uppercase;
+			color: var(--muted);
+			font-weight: 700;
+		}
+
+		h1 {
+			margin: 0.1rem 0 0;
+			font-size: clamp(1.35rem, 3vw, 2rem);
+			letter-spacing: 0.04em;
+		}
+
+		.back-link {
+			text-decoration: none;
+			color: var(--text);
+			background: var(--surface);
+			border: 1px solid var(--border);
+			border-radius: 999px;
+			padding: 0.55rem 0.9rem;
+			font-weight: 600;
+			box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+		}
+
+		.board-shell {
+			background: var(--surface);
+			border: 1px solid var(--border);
+			border-radius: 24px;
+			padding: 1rem;
+			box-shadow: var(--shadow);
+		}
+
+		.tabs {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 0.45rem;
+			padding: 0.35rem;
+			border-radius: 14px;
+			background: var(--surface-2);
+			border: 1px solid var(--border);
+			margin-bottom: 0.95rem;
+		}
+
+		.tab-btn {
+			border: 0;
+			background: transparent;
+			color: var(--muted);
+			border-radius: 10px;
+			padding: 0.62rem;
+			font-weight: 700;
+			cursor: pointer;
+			transition: 160ms ease;
+		}
+
+		.tab-btn:hover { color: var(--text); }
+		.tab-btn.active {
+			background: var(--text);
+			color: #fff;
+			box-shadow: 0 6px 14px rgba(17, 24, 39, 0.18);
+		}
+
+		.meta {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 1rem;
+			margin-bottom: 0.9rem;
+			color: var(--muted);
+			font-size: 0.9rem;
+		}
+
+		.list {
+			list-style: none;
+			margin: 0;
+			padding: 0;
+			display: flex;
+			flex-direction: column;
+			gap: 0.6rem;
+			max-height: min(70vh, 720px);
+			overflow: auto;
+			padding-right: 0.2rem;
+		}
+
+		.item {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			background: linear-gradient(145deg, #ffffff, #f8f9fc);
+			border: 1px solid var(--border);
+			border-radius: 14px;
+			padding: 0.78rem 0.9rem;
+			font-weight: 600;
+		}
+
+		.item-left {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.42rem;
+			min-width: 0;
+		}
+
+		.rank {
+			min-width: 2.2rem;
+			color: var(--muted);
+			font-size: 0.82rem;
+			font-weight: 700;
+			letter-spacing: 0.04em;
+		}
+
+		.name {
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			max-width: 18rem;
+		}
+
+		.you {
+			margin-left: 0.4rem;
+			color: var(--muted);
+			font-size: 0.82em;
+			font-weight: 500;
+		}
+
+		.score {
+			font-variant-numeric: tabular-nums;
+			font-weight: 800;
+		}
+
+		.medal {
+			width: 1rem;
+			height: 1rem;
+			flex: 0 0 auto;
+		}
+
+		.item.rank-1 {
+			background: linear-gradient(135deg, #ffd700 0%, #f7b500 100%);
+			color: #231b05;
+			border-color: #f0c000;
+		}
+		.item.rank-2 {
+			background: linear-gradient(135deg, #efefef 0%, #cdcdcd 100%);
+			color: #222;
+			border-color: #b9b9b9;
+		}
+		.item.rank-3 {
+			background: linear-gradient(135deg, #dca06a 0%, #bf7a3f 100%);
+			color: #1f1208;
+			border-color: #a46633;
+		}
+
+		.state {
+			text-align: center;
+			color: var(--muted);
+			font-weight: 600;
+			padding: 2.2rem 1rem;
+			border-radius: 14px;
+			border: 1px dashed var(--border);
+			background: var(--surface-2);
+		}
+	</style>
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+	<div class="page">
+		<header class="top">
+			<div class="brand">
+				<svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+					<path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+					<path d="M4 22h16"></path>
+					<path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+					<path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+					<path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+				</svg>
+				<div>
+					<p class="kicker">Wordle Unbound</p>
+					<h1>Leaderboards</h1>
+				</div>
+			</div>
+			<a class="back-link" href="./index.html">← Back to game</a>
+		</header>
+
+		<section class="board-shell" aria-label="Leaderboard panel">
+			<div class="tabs" role="tablist" aria-label="Leaderboard categories">
+				<button class="tab-btn active" data-tab="avg" role="tab" aria-selected="true">Avg Guesses</button>
+				<button class="tab-btn" data-tab="streak" role="tab" aria-selected="false">Winstreak</button>
+			</div>
+
+			<div class="meta">
+				<span id="meta-label">Top 50 • Lowest average wins</span>
+				<span id="meta-count"></span>
+			</div>
+
+			<ul id="lb-list" class="list" aria-live="polite"></ul>
+		</section>
+	</div>
+
+	<script>
+		(() => {
+			const supabaseUrl = "https://hcehsxnudbwjydvenlfz.supabase.co";
+			const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8";
+			const GUESS_SCALE = 10;
+
+			const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+			const listEl = document.getElementById("lb-list");
+			const metaCountEl = document.getElementById("meta-count");
+			const metaLabelEl = document.getElementById("meta-label");
+			const tabButtons = [...document.querySelectorAll(".tab-btn")];
+			const localUser = (() => {
+				try {
+					const raw = localStorage.getItem("wordle-user-data-v2");
+					if (!raw) return null;
+					return JSON.parse(raw)?.username || null;
+				} catch {
+					return null;
+				}
+			})();
+
+			const medalSvg = {
+				0: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#a97700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`,
+				1: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#6c6f74" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`,
+				2: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#75431e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`
+			};
+
+			function renderState(text) {
+				listEl.innerHTML = `<li class="state">${text}</li>`;
+				metaCountEl.textContent = "";
+			}
+
+			function renderRows(rows, tab) {
+				if (!rows.length) {
+					renderState("No data found yet.");
+					return;
+				}
+
+				metaCountEl.textContent = `${rows.length} players`;
+				listEl.innerHTML = "";
+
+				rows.forEach((player, i) => {
+					const li = document.createElement("li");
+					li.className = "item";
+					if (i === 0) li.classList.add("rank-1");
+					if (i === 1) li.classList.add("rank-2");
+					if (i === 2) li.classList.add("rank-3");
+
+					const score = tab === "avg" ? player.avg : (player.max_winstreak ?? player.winstreak ?? 0);
+					const isYou = localUser && player.username === localUser;
+
+					li.innerHTML = `
+						<div class="item-left">
+							<span class="rank">#${i + 1}</span>
+							${medalSvg[i] || ""}
+							<span class="name">${player.username}${isYou ? `<span class="you">(Me)</span>` : ""}</span>
+						</div>
+						<div class="score">${score}</div>
+					`;
+					listEl.appendChild(li);
+				});
+			}
+
+			async function loadLeaderboard(tab) {
+				renderState("Loading leaderboard...");
+				metaLabelEl.textContent = tab === "avg" ? "Top 50 • Lowest average wins" : "Top 50 • Highest max winstreak";
+
+				try {
+					let rows = [];
+
+					if (tab === "avg") {
+						const { data, error } = await supabase
+							.from("leaderboards")
+							.select("username, games_played, total_guesses")
+							.order("games_played", { ascending: false });
+						if (error) throw error;
+
+						rows = (data || [])
+							.filter(p => p.username && p.games_played > 0)
+							.map(p => ({ ...p, avg: ((p.total_guesses / GUESS_SCALE) / p.games_played).toFixed(2) }))
+							.sort((a, b) => Number(a.avg) - Number(b.avg))
+							.slice(0, 50);
+					} else {
+						const { data, error } = await supabase
+							.from("leaderboards")
+							.select("username, winstreak, max_winstreak")
+							.order("max_winstreak", { ascending: false })
+							.limit(50);
+						if (error) throw error;
+						rows = (data || []).filter(p => p.username);
+					}
+
+					renderRows(rows, tab);
+				} catch (err) {
+					console.error("Leaderboard load failed:", err);
+					renderState("Failed to load leaderboard.");
+				}
+			}
+
+			tabButtons.forEach((btn) => {
+				btn.addEventListener("click", () => {
+					tabButtons.forEach((b) => {
+						b.classList.remove("active");
+						b.setAttribute("aria-selected", "false");
+					});
+					btn.classList.add("active");
+					btn.setAttribute("aria-selected", "true");
+					loadLeaderboard(btn.dataset.tab);
+				});
+			});
+
+			loadLeaderboard("avg");
+		})();
+	</script>
+</body>
+</html>
