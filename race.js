@@ -17,13 +17,23 @@
   const copyLinkBtn = document.getElementById("copy-link-btn");
   const readyBtn = document.getElementById("ready-btn");
   const statusEl = document.getElementById("race-status");
+  const presenceSelfNameEl = document.getElementById("presence-self-name");
+  const presenceSelfReadyEl = document.getElementById("presence-self-ready");
+  const presenceOpponentNameEl = document.getElementById("presence-opponent-name");
+  const presenceOpponentReadyEl = document.getElementById("presence-opponent-ready");
 
   const raceGameEl = document.getElementById("race-game");
   const raceBoardEl = document.getElementById("race-board");
   const raceKeyboardEl = document.getElementById("race-keyboard");
   const raceStopwatchEl = document.getElementById("race-stopwatch");
+  const opponentPressureEl = document.getElementById("opponent-pressure");
   const raceMessageEl = document.getElementById("race-game-message");
   const appLoader = document.getElementById("app-loader");
+  const raceResultModalEl = document.getElementById("race-result-modal");
+  const raceResultKickerEl = document.getElementById("race-result-kicker");
+  const raceResultTitleEl = document.getElementById("race-result-title");
+  const raceResultDetailsEl = document.getElementById("race-result-details");
+  const raceResultOkBtn = document.getElementById("race-result-ok");
 
   const userKey = "wordle-user-data-v2";
   const historyKeyPrefix = "wordle-race-history-";
@@ -62,6 +72,9 @@
   let currentWordId = null;
   let myHistorySet = new Set();
   let opponentHistorySet = new Set();
+  let opponentName = "Opponent";
+  let opponentProgress = 0;
+  let lastSentProgressCount = -1;
   const wordValidationCache = {};
 
   function hideLoader() {
@@ -75,6 +88,89 @@
 
   function setRaceMessage(text) {
     raceMessageEl.textContent = text;
+  }
+
+  function setOpponentPressure(text) {
+    if (!opponentPressureEl) return;
+    opponentPressureEl.textContent = text;
+  }
+
+  function ordinalWord(n) {
+    const map = {
+      1: "first",
+      2: "second",
+      3: "third",
+      4: "fourth",
+      5: "fifth",
+      6: "sixth",
+      7: "seventh",
+      8: "eighth",
+      9: "ninth",
+      10: "tenth"
+    };
+    return map[n] || `${n}th`;
+  }
+
+  function setReadyBadge(el, ready) {
+    if (!el) return;
+    el.textContent = ready ? "Ready" : "Not ready";
+    el.classList.toggle("ready", ready);
+    el.classList.toggle("not-ready", !ready);
+  }
+
+  function updatePresenceUI() {
+    if (presenceSelfNameEl) {
+      presenceSelfNameEl.textContent = currentUser?.username ? `${currentUser.username} (You)` : "You";
+    }
+    if (presenceOpponentNameEl) {
+      presenceOpponentNameEl.textContent = opponentName || "Waiting for opponent…";
+    }
+    setReadyBadge(presenceSelfReadyEl, selfReady);
+    setReadyBadge(presenceOpponentReadyEl, opponentReady);
+  }
+
+  function showRaceResultModal({ won, winnerName, winnerMs, word }) {
+    if (!raceResultModalEl) return;
+    const shownWord = (word || currentWord || "").toUpperCase();
+    const finalWinnerName = winnerName || (won ? currentUser?.username || "You" : opponentName || "Opponent");
+    const finalWinnerMs = Number.isFinite(winnerMs) ? winnerMs : won ? raceElapsedMs : null;
+
+    raceResultKickerEl.textContent = "Race Complete";
+    raceResultTitleEl.textContent = won ? "You Won 🏁" : "You Lost";
+    raceResultDetailsEl.innerHTML = `${finalWinnerName} won${finalWinnerMs !== null ? ` in <strong>${formatStopwatch(finalWinnerMs)}</strong>` : ""}.<br>Word was: <strong>${shownWord}</strong>`;
+
+    const card = raceResultModalEl.querySelector(".race-result-card");
+    if (card) {
+      card.classList.toggle("win", won);
+      card.classList.toggle("lose", !won);
+    }
+
+    raceResultModalEl.classList.remove("hidden");
+  }
+
+  function closeRaceResultAndReturn() {
+    if (raceResultModalEl) raceResultModalEl.classList.add("hidden");
+    window.location.href = "index.html";
+  }
+
+  function shakeActiveRow() {
+    const activeRow = raceBoardEl?.lastElementChild;
+    if (!activeRow) return;
+    activeRow.classList.remove("race-row-shake");
+    void activeRow.offsetWidth;
+    activeRow.classList.add("race-row-shake");
+  }
+
+  async function sendTypingProgress(count) {
+    if (!raceStarted || raceFinished || !channel) return;
+    const safeCount = Math.max(0, Math.min(wordLength, Number(count) || 0));
+    if (safeCount === lastSentProgressCount) return;
+    lastSentProgressCount = safeCount;
+    await sendRaceEvent("typing_progress", {
+      uuid: currentUser.uuid,
+      username: currentUser.username,
+      count: safeCount
+    });
   }
 
   function requestedRoomFromUrl() {
@@ -270,7 +366,7 @@
       raceTimer = null;
     }
     raceElapsedMs = Math.max(0, Date.now() - raceStartTs);
-    tickStopwatch();
+    raceStopwatchEl.textContent = formatStopwatch(raceElapsedMs);
   }
 
   async function isValidRaceWord(word) {
@@ -388,15 +484,6 @@
     if (wrap) wrap.scrollTop = wrap.scrollHeight;
   }
 
-  function finishRaceWithPopup({ won, opponentName, opponentMs }) {
-    const winnerLine = won
-      ? `You won in ${formatStopwatch(raceElapsedMs)}.`
-      : `${opponentName || "Opponent"} won${Number.isFinite(opponentMs) ? ` in ${formatStopwatch(opponentMs)}.` : "."}`;
-    const message = `${won ? "You won!" : "You lost."}\n${winnerLine}\nWord: ${currentWord}`;
-    window.alert(message);
-    window.location.href = "index.html";
-  }
-
   function enterRaceStage(startAt) {
     roomCard.classList.add("hidden");
     createStage.classList.add("hidden");
@@ -406,10 +493,13 @@
     currentGuess = "";
     raceStarted = true;
     raceFinished = false;
+    opponentProgress = 0;
+    lastSentProgressCount = -1;
 
     buildRaceKeyboard();
     renderRaceBoard();
     setRaceMessage("Race started. Unlimited tries. Same Wordle rules.");
+    setOpponentPressure(`${opponentName || "Opponent"} is starting...`);
     startStopwatch(startAt);
   }
 
@@ -442,6 +532,7 @@
       copyLinkBtn.classList.add("hidden");
       setStatus("Joined room. Click Ready.");
     }
+    updatePresenceUI();
   }
 
   async function maybeStartRace() {
@@ -474,14 +565,33 @@
     channel
       .on("broadcast", { event: "ready" }, ({ payload }) => {
         if (!payload || payload.uuid === currentUser.uuid) return;
+        opponentName = payload.username || opponentName || "Opponent";
         opponentReady = Boolean(payload.ready);
+        updatePresenceUI();
         setStatus(opponentReady ? "Opponent is ready. Waiting for you." : "Opponent is not ready yet.");
         void maybeStartRace();
       })
       .on("broadcast", { event: "profile" }, ({ payload }) => {
         if (!payload || payload.uuid === currentUser.uuid) return;
+        opponentName = payload.username || opponentName || "Opponent";
         const arr = Array.isArray(payload.history) ? payload.history : [];
         opponentHistorySet = new Set(arr.map(v => Number(v)).filter(v => Number.isFinite(v) && v > 0));
+        if (typeof payload.ready === "boolean") opponentReady = payload.ready;
+        updatePresenceUI();
+        setStatus(`${opponentName} joined the room.`);
+      })
+      .on("broadcast", { event: "typing_progress" }, ({ payload }) => {
+        if (!payload || payload.uuid === currentUser.uuid || !raceStarted || raceFinished) return;
+        opponentName = payload.username || opponentName || "Opponent";
+        opponentProgress = Math.max(0, Math.min(wordLength, Number(payload.count) || 0));
+
+        if (opponentProgress <= 0) {
+          setOpponentPressure(`${opponentName} is preparing a guess...`);
+        } else if (opponentProgress >= wordLength) {
+          setOpponentPressure(`${opponentName} completed a guess.`);
+        } else {
+          setOpponentPressure(`${opponentName} guessed the ${ordinalWord(opponentProgress)} letter...`);
+        }
       })
       .on("broadcast", { event: "word_selected" }, ({ payload }) => {
         if (!payload?.word) return;
@@ -503,15 +613,16 @@
         raceFinished = true;
         stopStopwatch();
         markCurrentWordPlayed();
-        setRaceMessage(`You lost. ${payload.username || "Opponent"} solved first.`);
+        opponentName = payload.username || opponentName || "Opponent";
+        setRaceMessage(`You lost. ${opponentName} solved first.`);
+        setOpponentPressure(`${opponentName} finished the word.`);
         setStatus("Race complete.");
-        window.setTimeout(() => {
-          finishRaceWithPopup({
-            won: false,
-            opponentName: payload.username,
-            opponentMs: Number(payload.elapsedMs)
-          });
-        }, 150);
+        showRaceResultModal({
+          won: false,
+          winnerName: opponentName,
+          winnerMs: Number(payload.elapsedMs),
+          word: payload.word || currentWord
+        });
       });
 
     channel.subscribe((status) => {
@@ -520,16 +631,19 @@
         void sendRaceEvent("profile", {
           uuid: currentUser.uuid,
           username: currentUser.username,
-          history: Array.from(myHistorySet)
+          history: Array.from(myHistorySet),
+          ready: selfReady
         });
       }
     });
 
     selfReady = false;
     opponentReady = false;
+    opponentName = "Opponent";
     startBroadcasted = false;
     readyBtn.disabled = false;
     readyBtn.textContent = "Ready";
+    updatePresenceUI();
   }
 
   function exitRoomToLobby() {
@@ -544,6 +658,8 @@
     raceFinished = false;
     raceRows = [];
     currentGuess = "";
+  opponentProgress = 0;
+  lastSentProgressCount = -1;
 
     if (raceTimer) {
       clearInterval(raceTimer);
@@ -565,6 +681,7 @@
     readyBtn.disabled = false;
     readyBtn.textContent = "Ready";
     setStatus("Create room or join with a code.");
+    setOpponentPressure("");
   }
 
   async function handleReady() {
@@ -573,6 +690,7 @@
     selfReady = true;
     readyBtn.disabled = true;
     readyBtn.textContent = "Ready ✓";
+    updatePresenceUI();
 
     await sendRaceEvent("ready", {
       uuid: currentUser.uuid,
@@ -611,6 +729,7 @@
 
     if (currentGuess.length !== wordLength) {
       setRaceMessage(`Need ${wordLength} letters.`);
+      shakeActiveRow();
       return;
     }
 
@@ -618,6 +737,7 @@
     const validWord = await isValidRaceWord(guess);
     if (!validWord) {
       setRaceMessage("That word is not accepted.");
+      shakeActiveRow();
       return;
     }
 
@@ -626,6 +746,9 @@
     raceRows.push({ guess, colors: [] });
     currentGuess = "";
     renderRaceBoard();
+  opponentProgress = 0;
+  await sendTypingProgress(wordLength);
+  await sendTypingProgress(0);
 
     for (let i = 0; i < colors.length; i += 1) {
       window.setTimeout(() => {
@@ -645,9 +768,15 @@
         await sendRaceEvent("race_finish", {
           uuid: currentUser.uuid,
           username: currentUser.username,
-          elapsedMs: raceElapsedMs
+          elapsedMs: raceElapsedMs,
+          word: currentWord
         });
-        finishRaceWithPopup({ won: true });
+        showRaceResultModal({
+          won: true,
+          winnerName: currentUser.username,
+          winnerMs: raceElapsedMs,
+          word: currentWord
+        });
       }, colors.length * 180 + 120);
     } else {
       setRaceMessage(`Try #${raceRows.length} — keep going.`);
@@ -665,12 +794,14 @@
     if (key === "⌫") {
       currentGuess = currentGuess.slice(0, -1);
       renderRaceBoard();
+      void sendTypingProgress(currentGuess.length);
       return;
     }
 
     if (/^[A-Z]$/.test(key) && currentGuess.length < wordLength) {
       currentGuess += key;
       renderRaceBoard();
+      void sendTypingProgress(currentGuess.length);
     }
   }
 
@@ -702,6 +833,10 @@
 
   readyBtn?.addEventListener("click", () => {
     void handleReady();
+  });
+
+  raceResultOkBtn?.addEventListener("click", () => {
+    closeRaceResultAndReturn();
   });
 
   document.addEventListener("keydown", (e) => {

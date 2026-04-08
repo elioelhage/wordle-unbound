@@ -16,8 +16,8 @@
 				<span class="loader-tile">A</span>
 				<span class="loader-tile">C</span>
 				<span class="loader-tile">E</span>
-				<span class="loader-tile">1</span>
-				<span class="loader-tile">V</span>
+				<span class="loader-tile">R</span>
+				<span class="loader-tile">S</span>
 			</div>
 			<p class="loader-text">Loading race lobby…</p>
 		</div>
@@ -36,7 +36,7 @@
 					</svg>
 					<h1>Race Lobby</h1>
 				</div>
-				<p class="author-credit">1v1 rooms (host + 1 opponent)</p>
+				<p class="author-credit">Private rooms (host + opponent)</p>
 			</div>
 
 			<div class="topbar__right">
@@ -51,7 +51,7 @@
 		<main class="race-main">
 			<section id="create-stage" class="race-create-stage">
 				<div class="race-entry-card">
-					<button id="create-room-btn" class="primary-button race-create-btn" type="button">Create 1v1 Room</button>
+					<button id="create-room-btn" class="primary-button race-create-btn" type="button">Create Room</button>
 					<div class="join-row race-join-row">
 						<input id="join-code-input" class="text-input" type="text" maxlength="6" placeholder="Enter room code" autocomplete="off" />
 						<button id="join-code-btn" class="primary-button" type="button">Join</button>
@@ -81,6 +81,17 @@
 
 				<input id="room-link" class="text-input hidden" type="text" readonly />
 
+				<div class="player-presence" aria-live="polite">
+					<div class="presence-row" id="presence-self-row">
+						<span class="presence-name" id="presence-self-name">You</span>
+						<span class="presence-ready" id="presence-self-ready">Not ready</span>
+					</div>
+					<div class="presence-row" id="presence-opponent-row">
+						<span class="presence-name" id="presence-opponent-name">Waiting for opponent…</span>
+						<span class="presence-ready" id="presence-opponent-ready">Not ready</span>
+					</div>
+				</div>
+
 				<div class="room-actions">
 					<button id="ready-btn" class="primary-button" type="button">Ready</button>
 				</div>
@@ -93,6 +104,7 @@
 					<h2>Race</h2>
 					<div id="race-stopwatch" class="race-stopwatch">00:00.00</div>
 				</div>
+				<p id="opponent-pressure" class="opponent-pressure" aria-live="polite"></p>
 				<p id="race-game-message" class="race-status" aria-live="polite">Waiting to start…</p>
 				<section class="board-wrap" aria-label="Race board">
 					<div id="race-board" class="board" aria-live="polite"></div>
@@ -102,6 +114,15 @@
 				</section>
 			</section>
 		</main>
+	</div>
+
+	<div id="race-result-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="race-result-title">
+		<div class="modal__card race-result-card">
+			<p class="modal__kicker" id="race-result-kicker">Race Complete</p>
+			<h2 class="modal__title" id="race-result-title">Result</h2>
+			<p class="modal__countdown" id="race-result-details"></p>
+			<button id="race-result-ok" class="primary-button" type="button">OK</button>
+		</div>
 	</div>
 
 	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
