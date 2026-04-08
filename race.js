@@ -17,6 +17,7 @@
   const copyLinkBtn = document.getElementById("copy-link-btn");
   const readyBtn = document.getElementById("ready-btn");
   const statusEl = document.getElementById("race-status");
+  const raceBackButton = document.getElementById("race-back-button");
   const presenceSelfNameEl = document.getElementById("presence-self-name");
   const presenceSelfReadyEl = document.getElementById("presence-self-ready");
   const presenceOpponentNameEl = document.getElementById("presence-opponent-name");
@@ -72,6 +73,7 @@
   let currentWordId = null;
   let myHistorySet = new Set();
   let opponentHistorySet = new Set();
+  let terminatedRooms = new Set();
   let opponentName = "Opponent";
   let opponentProgress = 0;
   let selfBestCorrect = 0;
@@ -135,7 +137,53 @@
 
   function closeRaceResultAndReturn() {
     if (raceResultModalEl) raceResultModalEl.classList.add("hidden");
+    if (currentRoom && terminatedRooms.has(currentRoom)) {
+      exitRoomToLobby();
+      return;
+    }
     prepareNextRoundInRoom();
+  }
+
+  function isActiveRaceRound() {
+    return Boolean(currentRoom && raceStarted && !raceFinished);
+  }
+
+  async function terminateCurrentRoomForAll(reason, byUserAction = false) {
+    if (!currentRoom) return;
+    const roomCode = currentRoom;
+    terminatedRooms.add(roomCode);
+
+    if (channel) {
+      await sendRaceEvent("race_abort", {
+        uuid: currentUser?.uuid,
+        username: currentUser?.username || "Player",
+        roomCode,
+        reason: reason || "left_room"
+      });
+    }
+
+    raceFinished = true;
+    stopStopwatch();
+    if (byUserAction) {
+      setRaceMessage("You left this match. Room closed.");
+      setStatus("Room closed.");
+    }
+    exitRoomToLobby();
+  }
+
+  async function handleBackAttempt(destinationHref) {
+    if (!isActiveRaceRound()) {
+      window.location.href = destinationHref || "index.html";
+      return;
+    }
+
+    const first = window.confirm("Are you sure you want to leave this room? This will end the match for both players.");
+    if (!first) return;
+    const second = window.confirm("Final confirmation: leave now and end this room for both players?");
+    if (!second) return;
+
+    await terminateCurrentRoomForAll("manual_leave", true);
+    window.location.href = destinationHref || "index.html";
   }
 
   function shakeActiveRow() {
@@ -573,6 +621,14 @@
   }
 
   async function setupRoom(roomCode, role) {
+    if (terminatedRooms.has(roomCode)) {
+      setStatus("This room was ended and can't be rejoined. Create a new room.");
+      raceGameEl.classList.add("hidden");
+      roomCard.classList.add("hidden");
+      createStage.classList.remove("hidden");
+      return;
+    }
+
     applyLobbyRole(role, roomCode);
     await ensureWordForRoom(roomCode);
 
@@ -655,6 +711,31 @@
           winnerMs: Number(payload.elapsedMs),
           word: payload.word || currentWord
         });
+      })
+      .on("broadcast", { event: "race_abort" }, ({ payload }) => {
+        if (!payload || payload.uuid === currentUser.uuid) return;
+        const roomCode = String(payload.roomCode || currentRoom || "");
+        if (roomCode) terminatedRooms.add(roomCode);
+        if (!currentRoom || roomCode !== currentRoom) return;
+
+        raceFinished = true;
+        stopStopwatch();
+        const quitter = payload.username || "Opponent";
+        setRaceMessage(`${quitter} left. Match cancelled.`);
+        setStatus("Room closed.");
+
+        showRaceResultModal({
+          won: true,
+          winnerName: currentUser?.username || "You",
+          winnerMs: raceElapsedMs,
+          word: currentWord || "-"
+        });
+
+        if (raceResultKickerEl) raceResultKickerEl.textContent = "Match Cancelled";
+        if (raceResultTitleEl) raceResultTitleEl.textContent = "Opponent Left";
+        if (raceResultDetailsEl) {
+          raceResultDetailsEl.innerHTML = `${quitter} left the room.<br>This match has been closed.`;
+        }
       });
 
     channel.subscribe((status) => {
@@ -865,6 +946,12 @@
 
   readyBtn?.addEventListener("click", () => {
     void handleReady();
+  });
+
+  raceBackButton?.addEventListener("click", (e) => {
+    e.preventDefault();
+    const href = raceBackButton.getAttribute("href") || "index.html";
+    void handleBackAttempt(href);
   });
 
   raceResultOkBtn?.addEventListener("click", () => {

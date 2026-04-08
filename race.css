@@ -283,6 +283,15 @@
 }
 
 @media (max-width: 620px) {
+  #race-game .board-wrap {
+    max-height: min(31vh, 12.5rem);
+    padding-right: 0;
+  }
+
+  #race-game .board {
+    align-content: start;
+  }
+
   .race-game-top {
     align-items: flex-start;
     flex-direction: column;
