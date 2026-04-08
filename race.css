@@ -71,8 +71,12 @@
 
 .room-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
+}
+
+.room-actions #start-race-btn {
+  grid-column: 1 / -1;
 }
 
 .race-status {
@@ -82,9 +86,39 @@
   font-weight: 600;
 }
 
+.race-game-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.race-stopwatch {
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  font-size: 1rem;
+  padding: 0.38rem 0.62rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+#race-game .board-wrap {
+  margin-top: 0.35rem;
+}
+
+#race-game .keyboard-wrap {
+  margin-top: 0.3rem;
+}
+
 @media (max-width: 620px) {
   .join-row,
   .room-actions {
     grid-template-columns: 1fr;
+  }
+
+  .race-game-top {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

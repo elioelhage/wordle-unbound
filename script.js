@@ -44,6 +44,7 @@
   const usernameInput = document.getElementById("username-input");
   const passwordInput = document.getElementById("password-input");
   const leaderboardBtn = document.getElementById("leaderboard-button");
+  const raceLobbyBtn = document.getElementById("race-lobby-button");
   const leaderboardModal = document.getElementById("leaderboard-modal");
   const closeLeaderboardBtn = document.getElementById("close-leaderboard");
   const leaderboardCard = document.querySelector(".leaderboard-card");
@@ -352,6 +353,26 @@
     initGlobalTooltips();
 
     leaderboardBtn.addEventListener("click", openLeaderboard);
+    if (raceLobbyBtn) {
+      raceLobbyBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const userData = getUserData();
+
+        if (!userData?.username) {
+          openLeaderboard();
+          usernameView.classList.remove("hidden");
+          statsView.classList.add("hidden");
+          usernameError.textContent = "Create or login to your account before entering Race Lobby.";
+          usernameError.classList.remove("hidden");
+          return;
+        }
+
+        showAppLoader("Loading race lobby…");
+        window.setTimeout(() => {
+          window.location.href = raceLobbyBtn.getAttribute("href") || "race.html";
+        }, 220);
+      });
+    }
     closeLeaderboardBtn.addEventListener("click", () => leaderboardModal.classList.add("hidden"));
 
     saveUsernameBtn.addEventListener("click", async () => {

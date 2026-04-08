@@ -9,6 +9,20 @@
 	<link rel="stylesheet" href="race.css" />
 </head>
 <body data-theme="dark">
+	<div id="app-loader" class="app-loader" role="status" aria-live="polite" aria-label="Loading Race Lobby">
+		<div class="loader-card">
+			<div class="loader-grid" aria-hidden="true">
+				<span class="loader-tile">R</span>
+				<span class="loader-tile">A</span>
+				<span class="loader-tile">C</span>
+				<span class="loader-tile">E</span>
+				<span class="loader-tile">1</span>
+				<span class="loader-tile">V</span>
+			</div>
+			<p class="loader-text">Loading race lobby…</p>
+		</div>
+	</div>
+
 	<div class="app-shell race-shell">
 		<header class="topbar race-topbar">
 			<div class="topbar__left">
@@ -65,12 +79,27 @@
 				</div>
 
 				<div class="room-actions">
+					<button id="start-race-btn" class="primary-button" type="button">Play</button>
 					<button id="copy-code-btn" class="primary-button" type="button">Copy Code</button>
 					<button id="copy-link-btn" class="primary-button" type="button">Copy Link</button>
 					<button id="share-link-btn" class="primary-button" type="button">Share</button>
 				</div>
 
 				<p id="race-status" class="race-status" aria-live="polite"></p>
+			</section>
+
+			<section id="race-game" class="race-card hidden">
+				<div class="race-game-top">
+					<h2>Race Word</h2>
+					<div id="race-stopwatch" class="race-stopwatch">00:00.00</div>
+				</div>
+				<p id="race-game-message" class="race-status" aria-live="polite">Press Play to begin.</p>
+				<section class="board-wrap" aria-label="Race board">
+					<div id="race-board" class="board" aria-live="polite"></div>
+				</section>
+				<section class="keyboard-wrap" aria-label="Race keyboard">
+					<div id="race-keyboard" class="keyboard"></div>
+				</section>
 			</section>
 		</main>
 	</div>
