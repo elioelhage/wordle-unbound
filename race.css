@@ -21,6 +21,16 @@
   padding-bottom: 1.4rem;
 }
 
+.race-create-stage {
+  min-height: calc(100dvh - 10.5rem);
+  display: grid;
+  place-items: center;
+}
+
+.race-create-btn {
+  max-width: 20rem;
+}
+
 .race-card {
   border: 1px solid var(--border);
   background: var(--surface);
@@ -50,6 +60,13 @@
   background: color-mix(in srgb, var(--correct) 11%, var(--surface));
 }
 
+.room-code-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.2rem;
+}
+
 .room-meta {
   display: grid;
   gap: 0.38rem;
@@ -69,14 +86,13 @@
   letter-spacing: 0.15em;
 }
 
-.room-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
+.race-inline-icon {
+  width: 2.35rem;
+  height: 2.35rem;
 }
 
-.room-actions #start-race-btn {
-  grid-column: 1 / -1;
+.room-actions {
+  margin-top: 0.7rem;
 }
 
 .race-status {
@@ -111,14 +127,17 @@
   margin-top: 0.3rem;
 }
 
-@media (max-width: 620px) {
-  .join-row,
-  .room-actions {
-    grid-template-columns: 1fr;
-  }
+.race-game-stage {
+  min-height: calc(100dvh - 10.5rem);
+}
 
+@media (max-width: 620px) {
   .race-game-top {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .room-code {
+    font-size: 1.6rem;
   }
 }

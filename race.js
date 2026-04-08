@@ -3,9 +3,9 @@
   const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8";
   const supabase = window.supabase?.createClient(supabaseUrl, supabaseKey);
 
+  const createStage = document.getElementById("create-stage");
   const createRoomBtn = document.getElementById("create-room-btn");
-  const joinRoomBtn = document.getElementById("join-room-btn");
-  const roomInput = document.getElementById("room-input");
+
   const roomCard = document.getElementById("room-card");
   const roomRoleEl = document.getElementById("room-role");
   const roomHintEl = document.getElementById("room-hint");
@@ -13,36 +13,40 @@
   const roomLinkEl = document.getElementById("room-link");
   const copyCodeBtn = document.getElementById("copy-code-btn");
   const copyLinkBtn = document.getElementById("copy-link-btn");
-  const shareLinkBtn = document.getElementById("share-link-btn");
-  const startRaceBtn = document.getElementById("start-race-btn");
+  const readyBtn = document.getElementById("ready-btn");
+  const statusEl = document.getElementById("race-status");
+
   const raceGameEl = document.getElementById("race-game");
   const raceBoardEl = document.getElementById("race-board");
   const raceKeyboardEl = document.getElementById("race-keyboard");
   const raceStopwatchEl = document.getElementById("race-stopwatch");
   const raceMessageEl = document.getElementById("race-game-message");
   const appLoader = document.getElementById("app-loader");
-  const statusEl = document.getElementById("race-status");
-  const createRoomCard = document.getElementById("create-room-card");
-  const joinRoomCard = document.getElementById("join-room-card");
 
-  const roomKey = "wordle-race-room";
   const userKey = "wordle-user-data-v2";
-  const WORD_TABLE = "battle_words";
   const PLAYER_TABLE = "battle_players";
+  const WORD_TABLE = "battle_words";
+
   const FALLBACK_WORDS = [
-    "ABLE", "ACID", "AREA", "BAND", "BIRD", "BLUE", "BOAT", "CODE", "COLD", "CROW",
-    "DARK", "DEEP", "DONE", "DRAW", "EARN", "EPIC", "FAIR", "FIRE", "FLOW", "GAME",
-    "GLOW", "GOAL", "GROW", "HARD", "HOLD", "HOME", "IDEA", "JOIN", "JUMP", "KEEP",
-    "KING", "KNOW", "LAND", "LIFE", "LINE", "LOOK", "LOOP", "LUCK", "MAKE", "MOON",
-    "MOVE", "MYTH", "NEAR", "NOTE", "OPEN", "PACE", "PLAY", "RACE", "RING", "ROAD",
-    "ROOM", "RULE", "SAME", "SEEK", "SHIP", "SHOW", "SLOW", "SPIN", "STAR", "STEP",
-    "STOP", "SYNC", "TAKE", "TASK", "TEAM", "TEST", "TIME", "TRUE", "TURN", "TYPE",
-    "WAVE", "WIDE", "WILD", "WIND", "WING", "WORD", "WORK", "YEAR", "ZONE", "ZOOM"
+    "ABLE", "AREA", "BIRD", "BLUE", "BOAT", "CODE", "COLD", "CROW", "DEEP", "DRAW",
+    "EPIC", "FAIR", "FIRE", "FLOW", "GAME", "GLOW", "GOAL", "GROW", "HARD", "HOME",
+    "IDEA", "JOIN", "JUMP", "KEEP", "KING", "KNOW", "LAND", "LIFE", "LOOK", "LOOP",
+    "LUCK", "MAKE", "MOON", "MOVE", "MYTH", "NEAR", "NOTE", "OPEN", "PACE", "PLAY",
+    "RACE", "RING", "ROAD", "ROOM", "RULE", "SAME", "SEEK", "SHIP", "SHOW", "SLOW",
+    "SPIN", "STAR", "STEP", "STOP", "SYNC", "TAKE", "TASK", "TEAM", "TEST", "TIME",
+    "TRUE", "TURN", "TYPE", "WAVE", "WIDE", "WILD", "WIND", "WING", "WORD", "WORK",
+    "YEAR", "ZONE", "ZOOM"
   ];
 
   let currentUser = null;
   let currentRoom = null;
   let currentRole = null;
+  let channel = null;
+
+  let selfReady = false;
+  let opponentReady = false;
+  let startBroadcasted = false;
+
   let currentWord = null;
   let wordLength = 5;
   let currentGuess = "";
@@ -57,6 +61,14 @@
     setTimeout(() => appLoader.classList.add("is-hidden"), 140);
   }
 
+  function setStatus(text) {
+    statusEl.textContent = text;
+  }
+
+  function setRaceMessage(text) {
+    raceMessageEl.textContent = text;
+  }
+
   function getUserData() {
     try {
       const raw = localStorage.getItem(userKey);
@@ -66,32 +78,17 @@
     }
   }
 
-  function setStatus(text) {
-    statusEl.textContent = text;
-  }
-
-  function setRaceMessage(text) {
-    raceMessageEl.textContent = text;
-  }
-
-  function setControlsEnabled(enabled) {
-    createRoomBtn.disabled = !enabled;
-    joinRoomBtn.disabled = !enabled;
-    roomInput.disabled = !enabled;
-    startRaceBtn.disabled = true;
-  }
-
   async function ensureAuthenticatedUser() {
     currentUser = getUserData();
-    if (!currentUser?.username || !currentUser?.uuid) {
-      setControlsEnabled(false);
-      setStatus("Login required: create/login your account from the main game leaderboard first.");
+    if (!currentUser?.uuid || !currentUser?.username) {
+      createRoomBtn.disabled = true;
+      setStatus("Login required. Go back and sign in from leaderboard first.");
       return false;
     }
 
     if (!supabase) {
-      setControlsEnabled(false);
-      setStatus("Supabase client not loaded.");
+      createRoomBtn.disabled = true;
+      setStatus("Supabase is not available.");
       return false;
     }
 
@@ -102,13 +99,13 @@
       .maybeSingle();
 
     if (error || !data?.uuid) {
-      setControlsEnabled(false);
-      setStatus("Your account is not in battle_players yet.");
+      createRoomBtn.disabled = true;
+      setStatus("Your account is not present in battle_players.");
       return false;
     }
 
-    setControlsEnabled(true);
-    setStatus(`Logged in as ${currentUser.username}. Create or join a room.`);
+    createRoomBtn.disabled = false;
+    setStatus("Create room or open an invite link.");
     return true;
   }
 
@@ -131,41 +128,6 @@
     const url = new URL(window.location.href);
     url.searchParams.set("room", code);
     return url.toString();
-  }
-
-  function roomCodeToWordId(code) {
-    let hash = 0;
-    const clean = String(code || "").toUpperCase();
-    for (let i = 0; i < clean.length; i += 1) {
-      hash = (hash * 31 + clean.charCodeAt(i)) % 670;
-    }
-    return (hash % 670) + 1;
-  }
-
-  async function fetchBattleWordById(id) {
-    const { data, error } = await supabase
-      .from(WORD_TABLE)
-      .select("word")
-      .eq("id", id)
-      .maybeSingle();
-    if (error || !data?.word) return null;
-    return String(data.word).toUpperCase();
-  }
-
-  function fallbackWordForRoom(code) {
-    const idx = (roomCodeToWordId(code) - 1) % FALLBACK_WORDS.length;
-    return FALLBACK_WORDS[Math.max(0, idx)] || "RACE";
-  }
-
-  async function ensureWordForRoom(code) {
-    if (currentWord) return currentWord;
-
-    const remoteWord = await fetchBattleWordById(roomCodeToWordId(code));
-    const finalWord = remoteWord || fallbackWordForRoom(code);
-
-    currentWord = finalWord;
-    wordLength = finalWord.length;
-    return finalWord;
   }
 
   async function copyText(text) {
@@ -192,69 +154,39 @@
     }
   }
 
-  function applyRoleUI(role) {
-    if (role === "host") {
-      createRoomCard?.classList.remove("hidden");
-      joinRoomCard?.classList.add("hidden");
-      shareLinkBtn?.classList.remove("hidden");
-      copyLinkBtn?.classList.remove("hidden");
-      roomRoleEl.textContent = "You are Host";
-      roomHintEl.textContent = "Share this code/link with your challenger.";
-    } else {
-      joinRoomCard?.classList.remove("hidden");
-      createRoomCard?.classList.add("hidden");
-      shareLinkBtn?.classList.add("hidden");
-      copyLinkBtn?.classList.add("hidden");
-      roomRoleEl.textContent = "You are Challenger";
-      roomHintEl.textContent = "You joined the room. Press Play when ready.";
+  function roomCodeToWordId(code) {
+    let hash = 0;
+    const clean = String(code || "").toUpperCase();
+    for (let i = 0; i < clean.length; i += 1) {
+      hash = (hash * 31 + clean.charCodeAt(i)) % 670;
     }
+    return (hash % 670) + 1;
   }
 
-  function setRoom(code, role) {
-    const cleanCode = sanitizeRoomCode(code);
-    if (!cleanCode) return;
+  async function fetchBattleWordById(id) {
+    const { data, error } = await supabase
+      .from(WORD_TABLE)
+      .select("word")
+      .eq("id", id)
+      .maybeSingle();
 
-    currentRoom = cleanCode;
-    currentRole = role;
-    currentWord = null;
-
-    roomCard.classList.remove("hidden");
-    roomCodeEl.textContent = cleanCode;
-    roomLinkEl.value = roomInviteLink(cleanCode);
-    localStorage.setItem(roomKey, JSON.stringify({ code: cleanCode, role, updatedAt: Date.now() }));
-
-    const url = new URL(window.location.href);
-    url.searchParams.set("room", cleanCode);
-    window.history.replaceState({}, "", url);
-
-    applyRoleUI(role);
-    startRaceBtn.disabled = false;
-    setStatus(role === "host" ? "Room created. Share the code with challenger." : "Room joined. Ready to race.");
+    if (error || !data?.word) return null;
+    return String(data.word).toUpperCase();
   }
 
-  async function createRoom() {
-    if (!(await ensureAuthenticatedUser())) return;
-    if (currentRole === "host" && currentRoom) {
-      setStatus("You already host a room. Share your code or start race.");
-      return;
-    }
-    setRoom(randomRoomCode(), "host");
+  function fallbackWordForRoom(code) {
+    const idx = (roomCodeToWordId(code) - 1) % FALLBACK_WORDS.length;
+    return FALLBACK_WORDS[Math.max(0, idx)] || "RACE";
   }
 
-  async function joinRoom() {
-    if (!(await ensureAuthenticatedUser())) return;
-    if (currentRole === "host" && currentRoom) {
-      setStatus("Host cannot join another room. Use your current room.");
-      return;
-    }
+  async function ensureWordForRoom(code) {
+    if (currentWord) return currentWord;
 
-    const cleanCode = sanitizeRoomCode(roomInput.value);
-    roomInput.value = cleanCode;
-    if (cleanCode.length !== 6) {
-      setStatus("Room code must be 6 letters/numbers.");
-      return;
-    }
-    setRoom(cleanCode, "guest");
+    const remote = await fetchBattleWordById(roomCodeToWordId(code));
+    const chosen = remote || fallbackWordForRoom(code);
+    currentWord = chosen;
+    wordLength = chosen.length;
+    return chosen;
   }
 
   function formatStopwatch(ms) {
@@ -269,8 +201,8 @@
     raceStopwatchEl.textContent = formatStopwatch(Date.now() - raceStartTs);
   }
 
-  function startStopwatch() {
-    raceStartTs = Date.now();
+  function startStopwatch(startAt) {
+    raceStartTs = startAt || Date.now();
     raceStopwatchEl.textContent = "00:00.00";
     if (raceTimer) clearInterval(raceTimer);
     raceTimer = setInterval(tickStopwatch, 80);
@@ -282,28 +214,6 @@
       raceTimer = null;
     }
     tickStopwatch();
-  }
-
-  function renderRaceBoard() {
-    raceBoardEl.innerHTML = "";
-    raceBoardEl.style.setProperty("--word-length", wordLength);
-
-    for (let r = 0; r < raceRows.length + 1; r += 1) {
-      const row = document.createElement("div");
-      row.className = "row";
-      const guess = r < raceRows.length ? raceRows[r] : currentGuess;
-
-      for (let c = 0; c < wordLength; c += 1) {
-        const tile = document.createElement("div");
-        tile.className = "tile";
-        const letter = guess?.[c] || "";
-        tile.textContent = letter;
-        if (letter) tile.classList.add("filled");
-        row.appendChild(tile);
-      }
-
-      raceBoardEl.appendChild(row);
-    }
   }
 
   function buildRaceKeyboard() {
@@ -321,6 +231,7 @@
         const button = document.createElement("button");
         button.type = "button";
         button.className = "key";
+        button.id = `race-key-${letter}`;
         button.textContent = letter;
         if (letter === "ENTER" || letter === "⌫") button.classList.add("wide");
         button.addEventListener("click", () => onRaceKey(letter));
@@ -328,6 +239,211 @@
       });
       raceKeyboardEl.appendChild(row);
     });
+  }
+
+  function updateKeyboardColor(letter, color) {
+    const key = document.getElementById(`race-key-${letter}`);
+    if (!key) return;
+
+    const priority = { absent: 0, present: 1, correct: 2 };
+    const existing = key.classList.contains("correct")
+      ? "correct"
+      : key.classList.contains("present")
+      ? "present"
+      : key.classList.contains("absent")
+      ? "absent"
+      : null;
+
+    if (existing && priority[existing] >= priority[color]) return;
+
+    key.classList.remove("correct", "present", "absent");
+    key.classList.add(color);
+  }
+
+  function getTileColors(guess, answer) {
+    const answerLetters = answer.split("");
+    const guessLetters = guess.split("");
+    const colors = Array(answer.length).fill("absent");
+
+    for (let i = 0; i < answer.length; i += 1) {
+      if (guessLetters[i] === answerLetters[i]) {
+        colors[i] = "correct";
+        answerLetters[i] = null;
+        guessLetters[i] = null;
+      }
+    }
+
+    for (let i = 0; i < answer.length; i += 1) {
+      const letter = guessLetters[i];
+      if (letter && answerLetters.includes(letter)) {
+        colors[i] = "present";
+        answerLetters[answerLetters.indexOf(letter)] = null;
+      }
+    }
+
+    return colors;
+  }
+
+  function renderRaceBoard() {
+    raceBoardEl.innerHTML = "";
+    raceBoardEl.style.setProperty("--word-length", wordLength);
+
+    for (let r = 0; r < raceRows.length + 1; r += 1) {
+      const row = document.createElement("div");
+      row.className = "row";
+      const rowData = raceRows[r] || null;
+      const guess = rowData ? rowData.guess : currentGuess;
+      const colors = rowData ? rowData.colors : [];
+
+      for (let c = 0; c < wordLength; c += 1) {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        const letter = guess?.[c] || "";
+        tile.textContent = letter;
+        if (letter) tile.classList.add("filled");
+        if (colors[c]) tile.classList.add(colors[c]);
+        row.appendChild(tile);
+      }
+
+      raceBoardEl.appendChild(row);
+    }
+  }
+
+  function enterRaceStage(startAt) {
+    roomCard.classList.add("hidden");
+    createStage.classList.add("hidden");
+    raceGameEl.classList.remove("hidden");
+
+    raceRows = [];
+    currentGuess = "";
+    raceStarted = true;
+    raceFinished = false;
+
+    buildRaceKeyboard();
+    renderRaceBoard();
+    setRaceMessage("Race started. Unlimited tries. Same Wordle rules.");
+    startStopwatch(startAt);
+  }
+
+  async function sendRaceEvent(event, payload) {
+    if (!channel) return;
+    await channel.send({
+      type: "broadcast",
+      event,
+      payload
+    });
+  }
+
+  function applyLobbyRole(role, roomCode) {
+    currentRole = role;
+    currentRoom = roomCode;
+    roomCodeEl.textContent = roomCode;
+    roomLinkEl.value = roomInviteLink(roomCode);
+
+    createStage.classList.add("hidden");
+    roomCard.classList.remove("hidden");
+
+    if (role === "host") {
+      roomRoleEl.textContent = "You are Host";
+      roomHintEl.textContent = "Share this code with your challenger.";
+      copyLinkBtn.classList.remove("hidden");
+      setStatus("Room created. Waiting for challenger to join and ready up.");
+    } else {
+      roomRoleEl.textContent = "You are Challenger";
+      roomHintEl.textContent = "You joined this room. Ready up to start.";
+      copyLinkBtn.classList.add("hidden");
+      setStatus("Joined room. Click Ready.");
+    }
+  }
+
+  async function maybeStartRace() {
+    if (!selfReady || !opponentReady || !channel || startBroadcasted) return;
+    if (currentRole !== "host") return;
+
+    startBroadcasted = true;
+    const startAt = Date.now() + 800;
+    await sendRaceEvent("race_start", { startAt });
+    setStatus("Both ready. Starting race...");
+  }
+
+  async function setupRoom(roomCode, role) {
+    applyLobbyRole(role, roomCode);
+    await ensureWordForRoom(roomCode);
+
+    if (channel) {
+      try {
+        await supabase.removeChannel(channel);
+      } catch {}
+      channel = null;
+    }
+
+    channel = supabase.channel(`race:${roomCode}`, {
+      config: { broadcast: { self: true } }
+    });
+
+    channel
+      .on("broadcast", { event: "ready" }, ({ payload }) => {
+        if (!payload || payload.uuid === currentUser.uuid) return;
+        opponentReady = Boolean(payload.ready);
+        setStatus(opponentReady ? "Opponent is ready. Waiting for you." : "Opponent is not ready yet.");
+        void maybeStartRace();
+      })
+      .on("broadcast", { event: "race_start" }, ({ payload }) => {
+        const startAt = Number(payload?.startAt) || Date.now();
+        setStatus("Race started.");
+        enterRaceStage(startAt);
+      })
+      .on("broadcast", { event: "race_finish" }, ({ payload }) => {
+        if (!payload) return;
+        if (payload.uuid === currentUser.uuid) return;
+        if (raceFinished) return;
+
+        raceFinished = true;
+        stopStopwatch();
+        setRaceMessage(`You lost. ${payload.username || "Opponent"} solved first.`);
+        setStatus("Race complete.");
+      });
+
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        setStatus(role === "host" ? "Room live. Share code and click Ready." : "Connected to room. Click Ready.");
+      }
+    });
+
+    selfReady = false;
+    opponentReady = false;
+    startBroadcasted = false;
+    readyBtn.disabled = false;
+    readyBtn.textContent = "Ready";
+  }
+
+  async function handleReady() {
+    if (!currentRoom || raceStarted) return;
+
+    selfReady = true;
+    readyBtn.disabled = true;
+    readyBtn.textContent = "Ready ✓";
+
+    await sendRaceEvent("ready", {
+      uuid: currentUser.uuid,
+      username: currentUser.username,
+      ready: true
+    });
+
+    setStatus(opponentReady ? "Both ready. Starting..." : "Ready. Waiting for opponent...");
+    await maybeStartRace();
+  }
+
+  async function createRoom() {
+    const code = randomRoomCode();
+    await setupRoom(code, "host");
+  }
+
+  async function joinRoomFromUrl() {
+    const roomCode = sanitizeRoomCode(new URLSearchParams(window.location.search).get("room"));
+    if (!roomCode) return false;
+    await setupRoom(roomCode, "guest");
+    return true;
   }
 
   async function submitRaceGuess() {
@@ -339,15 +455,26 @@
     }
 
     const guess = currentGuess.toUpperCase();
-    raceRows.push(guess);
+    const colors = getTileColors(guess, currentWord);
+    raceRows.push({ guess, colors });
     currentGuess = "";
+
+    for (let i = 0; i < guess.length; i += 1) {
+      updateKeyboardColor(guess[i], colors[i]);
+    }
+
     renderRaceBoard();
 
     if (guess === currentWord) {
       raceFinished = true;
       stopStopwatch();
-      setRaceMessage(`Solved in ${formatStopwatch(Date.now() - raceStartTs)}. Share your time with opponent.`);
-      setStatus("Solved ✅ Compare time with your opponent.");
+      setRaceMessage("You won the race 🏁");
+      setStatus("Race complete.");
+      await sendRaceEvent("race_finish", {
+        uuid: currentUser.uuid,
+        username: currentUser.username,
+        elapsedMs: Date.now() - raceStartTs
+      });
     } else {
       setRaceMessage(`Try #${raceRows.length} — keep going.`);
     }
@@ -373,90 +500,22 @@
     }
   }
 
-  async function startRace() {
-    if (!currentRoom) {
-      setStatus("Create or join a room first.");
-      return;
-    }
-
-    const word = await ensureWordForRoom(currentRoom);
-    if (!word) {
-      setStatus("Could not load race word.");
-      return;
-    }
-
-    raceRows = [];
-    currentGuess = "";
-    raceStarted = true;
-    raceFinished = false;
-    raceGameEl.classList.remove("hidden");
-    setRaceMessage("Race started. Unlimited tries. No clues.");
-    renderRaceBoard();
-    startStopwatch();
-  }
-
-  function restoreRoomFromUrlOrState() {
-    const roomFromUrl = sanitizeRoomCode(new URLSearchParams(window.location.search).get("room"));
-    if (roomFromUrl) {
-      roomInput.value = roomFromUrl;
-      setRoom(roomFromUrl, "guest");
-      return;
-    }
-
-    try {
-      const saved = JSON.parse(localStorage.getItem(roomKey) || "null");
-      if (saved?.code && (saved.role === "host" || saved.role === "guest")) {
-        setRoom(saved.code, saved.role);
-      }
-    } catch {}
-  }
-
-  createRoomBtn?.addEventListener("click", createRoom);
-  joinRoomBtn?.addEventListener("click", joinRoom);
-
-  roomInput?.addEventListener("input", () => {
-    roomInput.value = sanitizeRoomCode(roomInput.value);
-  });
-
-  roomInput?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") joinRoom();
+  createRoomBtn?.addEventListener("click", () => {
+    void createRoom();
   });
 
   copyCodeBtn?.addEventListener("click", async () => {
     const ok = await copyText(roomCodeEl.textContent.trim());
-    setStatus(ok ? "Room code copied." : "Could not copy code on this device.");
+    setStatus(ok ? "Room code copied." : "Could not copy room code.");
   });
 
   copyLinkBtn?.addEventListener("click", async () => {
     const ok = await copyText(roomLinkEl.value);
-    setStatus(ok ? "Invite link copied." : "Could not copy link on this device.");
+    setStatus(ok ? "Invite link copied." : "Could not copy invite link.");
   });
 
-  shareLinkBtn?.addEventListener("click", async () => {
-    const link = roomLinkEl.value;
-    if (!link) {
-      setStatus("Create a room first.");
-      return;
-    }
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Wordle Unbound Race",
-          text: "Join my 1v1 race room!",
-          url: link
-        });
-        setStatus("Share sheet opened.");
-        return;
-      } catch {}
-    }
-
-    const ok = await copyText(link);
-    setStatus(ok ? "Share not available here, link copied instead." : "Could not share/copy link.");
-  });
-
-  startRaceBtn?.addEventListener("click", () => {
-    void startRace();
+  readyBtn?.addEventListener("click", () => {
+    void handleReady();
   });
 
   document.addEventListener("keydown", (e) => {
@@ -471,13 +530,23 @@
     }
   });
 
-  window.addEventListener("beforeunload", () => {
+  window.addEventListener("beforeunload", async () => {
     if (raceTimer) clearInterval(raceTimer);
+    if (channel) {
+      try {
+        await supabase.removeChannel(channel);
+      } catch {}
+    }
   });
 
-  buildRaceKeyboard();
-  ensureAuthenticatedUser().then((ok) => {
-    if (ok) restoreRoomFromUrlOrState();
+  ensureAuthenticatedUser().then(async (ok) => {
+    if (ok) {
+      const joined = await joinRoomFromUrl();
+      if (!joined) {
+        createStage.classList.remove("hidden");
+        roomCard.classList.add("hidden");
+      }
+    }
     hideLoader();
   });
 })();
