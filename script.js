@@ -56,9 +56,14 @@
   const lbList = document.getElementById("lb-list");
 
   const wordCache = {};
-  const today = new Date();
-  const localDateAsUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-  const daysPassed = Math.max(0, Math.floor((localDateAsUTC - launchDate) / 86400000));
+
+  function getCurrentSolutionIndex() {
+    const now = new Date();
+    const localDateAsUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.max(0, Math.floor((localDateAsUTC - launchDate) / 86400000));
+  }
+
+  const daysPassed = getCurrentSolutionIndex();
 
   if (WORD_SOURCE !== "supabase" && daysPassed >= DAILY_WORDS.length) {
     boardEl.innerHTML = `
@@ -95,6 +100,8 @@
   let hasSubmittedToLeaderboard = false;
   let noonReminderTimeout = null;
   let noonReminderInterval = null;
+  let dayRolloverTimeout = null;
+  let hasTriggeredDayReset = false;
 
   function generateUUID() { return crypto.randomUUID(); }
 
@@ -189,6 +196,7 @@
     updateHintBadge();
     bindEvents();
     initializeDailyNotifications();
+  scheduleDayRolloverReset();
     hideAppLoader();
     
     if (gameOver) showEndModal(Boolean(savedState?.won));
@@ -199,8 +207,49 @@
     // Small delay so the transition feels intentional and smooth.
     window.setTimeout(() => {
       appLoader.classList.add("is-hidden");
-      window.setTimeout(() => appLoader.remove(), 500);
     }, 180);
+  }
+
+  function showAppLoader(text = "Loading today's puzzle…") {
+    if (!appLoader) return;
+    const loaderText = appLoader.querySelector(".loader-text");
+    if (loaderText) loaderText.textContent = text;
+    appLoader.classList.remove("is-hidden");
+  }
+
+  function triggerDayReset() {
+    if (hasTriggeredDayReset) return;
+    hasTriggeredDayReset = true;
+
+    gameOver = true;
+    isSubmitting = true;
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
+
+    showAppLoader("Loading next puzzle…");
+    window.setTimeout(() => window.location.reload(), 220);
+  }
+
+  function msUntilNextWordChange() {
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 0, 0);
+    return Math.max(0, nextMidnight.getTime() - now.getTime());
+  }
+
+  function scheduleDayRolloverReset() {
+    if (dayRolloverTimeout) clearTimeout(dayRolloverTimeout);
+
+    dayRolloverTimeout = window.setTimeout(() => {
+      if (getCurrentSolutionIndex() !== solutionIndex) {
+        triggerDayReset();
+        return;
+      }
+
+      scheduleDayRolloverReset();
+    }, msUntilNextWordChange() + 150);
   }
 
   function setMetaText() {
@@ -1007,7 +1056,11 @@
       const tomorrow = new Date();
       tomorrow.setHours(24, 0, 0, 0);
       const diff = tomorrow.getTime() - now.getTime();
-      if (diff <= 0) return countdownEl.textContent = "00:00:00";
+      if (diff <= 0 || getCurrentSolutionIndex() !== solutionIndex) {
+        countdownEl.textContent = "00:00:00";
+        triggerDayReset();
+        return;
+      }
       const hours = Math.floor(diff / 3600000);
       const minutes = Math.floor((diff % 3600000) / 60000);
       const seconds = Math.floor((diff % 60000) / 1000);
@@ -1077,5 +1130,10 @@
   window.addEventListener("keydown", (e) => { if (e.code === "Space" && e.target.tagName !== "INPUT") e.preventDefault(); });
   window.addEventListener("resize", () => boardEl.style.setProperty("--tile-size", computeTileSize() + "px"));
   modal.addEventListener("click", (e) => { if (e.target === modal) hideEndModal(); });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && getCurrentSolutionIndex() !== solutionIndex) {
+      triggerDayReset();
+    }
+  });
 
 })();
