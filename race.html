@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+	<meta name="theme-color" content="#121213" />
+	<title>Wordle Unbound — Race Lobby</title>
+	<link rel="stylesheet" href="style.css" />
+	<link rel="stylesheet" href="race.css" />
+</head>
+<body data-theme="dark">
+	<div class="app-shell race-shell">
+		<header class="topbar race-topbar">
+			<div class="topbar__left">
+				<p class="eyebrow">Multiplayer</p>
+				<div class="title-wrap">
+					<svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M5 3v18"></path>
+						<path d="M5 4h9l-2 3 2 3H5"></path>
+						<path d="M19 8v13"></path>
+						<path d="M19 9h-8l2 3-2 3h8"></path>
+					</svg>
+					<h1>Race Lobby</h1>
+				</div>
+				<p class="author-credit">1v1 rooms (host + 1 opponent)</p>
+			</div>
+
+			<div class="topbar__right">
+				<a class="icon-button" href="index.html" aria-label="Back to game" title="Back to game">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="m15 18-6-6 6-6"></path>
+					</svg>
+				</a>
+			</div>
+		</header>
+
+		<main class="race-main">
+			<section class="race-card">
+				<h2>Create Room</h2>
+				<p>Generate a room code and send it to your friend.</p>
+				<button id="create-room-btn" class="primary-button" type="button">Create 1v1 Room</button>
+			</section>
+
+			<section class="race-card">
+				<h2>Join Room</h2>
+				<p>Paste a room code or open a room link.</p>
+				<div class="join-row">
+					<input id="room-input" class="text-input" type="text" maxlength="6" placeholder="Enter room code" autocomplete="off" />
+					<button id="join-room-btn" class="primary-button" type="button">Join</button>
+				</div>
+			</section>
+
+			<section class="race-card room-card hidden" id="room-card">
+				<h2 id="room-role">Room Ready</h2>
+				<p id="room-hint">Share this room with one friend.</p>
+
+				<div class="room-meta">
+					<span class="room-meta__label">Code</span>
+					<strong id="room-code" class="room-code">------</strong>
+				</div>
+
+				<div class="room-meta">
+					<span class="room-meta__label">Invite link</span>
+					<input id="room-link" class="text-input" type="text" readonly />
+				</div>
+
+				<div class="room-actions">
+					<button id="copy-code-btn" class="primary-button" type="button">Copy Code</button>
+					<button id="copy-link-btn" class="primary-button" type="button">Copy Link</button>
+					<button id="share-link-btn" class="primary-button" type="button">Share</button>
+				</div>
+
+				<p id="race-status" class="race-status" aria-live="polite"></p>
+			</section>
+		</main>
+	</div>
+
+	<script src="race.js"></script>
+</body>
+</html>

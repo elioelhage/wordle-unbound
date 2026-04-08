@@ -1,0 +1,90 @@
+.race-shell {
+  overflow-y: auto;
+}
+
+.race-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.race-main {
+  flex: 1;
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+  padding-bottom: 1.4rem;
+}
+
+.race-card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.race-card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.race-card p {
+  margin: 0.45rem 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.join-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+}
+
+.room-card {
+  background: color-mix(in srgb, var(--correct) 11%, var(--surface));
+}
+
+.room-meta {
+  display: grid;
+  gap: 0.38rem;
+  margin-bottom: 0.75rem;
+}
+
+.room-meta__label {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.room-code {
+  font-size: 2rem;
+  letter-spacing: 0.15em;
+}
+
+.room-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.race-status {
+  margin: 0.9rem 0 0;
+  min-height: 1.25rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+@media (max-width: 620px) {
+  .join-row,
+  .room-actions {
+    grid-template-columns: 1fr;
+  }
+}
