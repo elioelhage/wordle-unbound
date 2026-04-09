@@ -164,7 +164,7 @@
 
   const walkthroughSteps = [
     {
-      title: "Welcome to Wordle Unbound",
+  title: "Welcome to WordShift",
       body: "Guess the hidden daily word by typing letters and submitting with ENTER. Every day has a fresh word.",
       demo: "intro",
       pulse: false
@@ -189,7 +189,7 @@
     },
     {
       title: "Turn on reminders",
-      body: "Turn on reminders to do the daily Wordle.",
+      body: "Turn on reminders to do the daily WordShift.",
       demo: "notify",
       pulse: false
     },
@@ -514,7 +514,7 @@
     }, 180);
   }
 
-  function showAppLoader(text = "Loading today's puzzle…") {
+  function showAppLoader(text = "Loading WordShift…") {
     if (!appLoader) return;
     const loaderText = appLoader.querySelector(".loader-text");
     if (loaderText) loaderText.textContent = text;
@@ -740,7 +740,7 @@
     });
     walkthroughAccountBtn?.addEventListener("click", () => {
       closeWalkthrough(true);
-      openAuthModal("Create an account for the full Wordle Unbound experience.");
+  openAuthModal("Create an account for the full WordShift experience.");
     });
     walkthroughDemo?.addEventListener("click", async (e) => {
       const target = e.target.closest("#walkthrough-enable-notifications");
@@ -904,10 +904,10 @@
     const reminderKey = reminderSentKeyFor(slot);
     if (localStorage.getItem(reminderKey) === dayStamp) return;
 
-    const title = "Time for Wordle Unbound";
+  const title = "Time for WordShift";
     const body = slot === "noon"
-      ? "It’s noon — your daily word is waiting."
-      : "4 PM check-in: still time to finish today’s word.";
+  ? "It’s noon — your daily WordShift is waiting."
+  : "4 PM check-in: still time to finish today’s WordShift.";
 
     new Notification(title, {
       body,
