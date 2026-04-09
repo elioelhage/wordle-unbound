@@ -443,6 +443,7 @@ a.icon-button {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
   display: grid;
   place-items: center;
@@ -480,6 +481,7 @@ a.icon-button {
 .walkthrough-card {
   width: min(94vw, 33rem);
   text-align: left;
+  background: var(--surface);
   background:
     radial-gradient(120% 95% at 0% 0%, color-mix(in srgb, var(--correct) 12%, transparent), transparent 60%),
     linear-gradient(165deg, color-mix(in srgb, var(--bg) 90%, var(--surface) 10%), var(--surface));
@@ -489,6 +491,7 @@ a.icon-button {
   margin: 0.65rem 0 0.85rem;
   border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
   border-radius: 14px;
+  background: var(--surface);
   background: color-mix(in srgb, var(--surface) 86%, transparent);
   padding: 0.7rem;
 }
@@ -510,6 +513,14 @@ a.icon-button {
   font-size: 1rem;
   background: var(--tile-empty);
   color: var(--text);
+}
+
+.walkthrough-demo.length-transition .walkthrough-row-length {
+  animation: walkthroughLengthSwap 380ms ease;
+}
+
+.walkthrough-row-length .walkthrough-tile {
+  transform-origin: center;
 }
 
 .walkthrough-demo.show-colors .walkthrough-tile:nth-child(1),
@@ -545,6 +556,11 @@ a.icon-button {
   width: fit-content;
 }
 
+.walkthrough-badge.neutral {
+  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+  border-color: color-mix(in srgb, var(--border) 75%, transparent);
+}
+
 .walkthrough-badge.correct {
   background: color-mix(in srgb, var(--correct) 18%, transparent);
   border-color: color-mix(in srgb, var(--correct) 46%, var(--border));
@@ -564,15 +580,26 @@ a.icon-button {
 
 .walkthrough-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.45rem;
 }
 
 .walkthrough-skip,
-.walkthrough-prev {
+.walkthrough-prev,
+.walkthrough-account {
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+}
+
+.walkthrough-account {
+  white-space: nowrap;
+}
+
+.hint-button.walkthrough-hint-focus {
+  border-color: var(--correct);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--correct) 26%, transparent), var(--shadow);
+  animation: walkthroughHintPulse 880ms ease-in-out infinite;
 }
 
 .walkthrough-card.pulse-account {
@@ -583,6 +610,48 @@ a.icon-button {
   0% { transform: rotateX(0); }
   45% { transform: rotateX(90deg); }
   100% { transform: rotateX(0); }
+}
+
+@keyframes walkthroughLengthSwap {
+  0% { opacity: 0.72; transform: translateY(4px) scale(0.985); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes walkthroughHintPulse {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-1px) scale(1.04); }
+}
+
+@supports not ((backdrop-filter: blur(3px)) or (-webkit-backdrop-filter: blur(3px))) {
+  .modal {
+    background: rgba(0, 0, 0, 0.72);
+  }
+}
+
+@supports not (color: color-mix(in srgb, white 50%, black)) {
+  body::before {
+    background: radial-gradient(45% 45% at 30% 35%, rgba(106, 170, 100, 0.2), transparent 70%);
+  }
+
+  .account-menu-panel,
+  .modal__card,
+  .walkthrough-card,
+  .walkthrough-demo,
+  .leaderboard-card {
+    background: var(--surface);
+    border-color: var(--border);
+  }
+
+  .walkthrough-badge.correct,
+  .walkthrough-badge.present,
+  .walkthrough-badge.neutral {
+    background: var(--surface-2);
+    border-color: var(--border);
+  }
+
+  .hint-button.walkthrough-hint-focus {
+    box-shadow: 0 0 0 3px rgba(106, 170, 100, 0.28), var(--shadow);
+  }
 }
 
 select.text-input {

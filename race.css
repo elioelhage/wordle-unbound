@@ -1,4 +1,5 @@
 .race-shell {
+  min-height: var(--app-height, 100dvh);
   overflow-y: auto;
 }
 
@@ -32,6 +33,7 @@
   max-width: 780px;
   width: 100%;
   margin: 0 auto;
+  min-height: 0;
   padding-bottom: 1.4rem;
 }
 
@@ -266,7 +268,9 @@
 #race-game .board-wrap {
   margin-top: 0.35rem;
   display: block;
-  max-height: min(44vh, 24rem);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
   padding-right: 0.25rem;
   scrollbar-width: none;
@@ -285,10 +289,18 @@
 
 #race-game .keyboard-wrap {
   margin-top: 0.3rem;
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  background: var(--bg);
+  padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
 }
 
 .race-game-stage {
   min-height: calc(100dvh - 10.5rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .race-row-shake {
@@ -350,7 +362,7 @@
 
 @media (max-width: 620px) {
   #race-game .board-wrap {
-    max-height: min(31vh, 12.5rem);
+    max-height: none;
     padding-right: 0;
   }
 
@@ -370,5 +382,22 @@
 
   .room-code {
     font-size: 1.6rem;
+  }
+}
+
+@supports not (color: color-mix(in srgb, white 50%, black)) {
+  .race-entry-card,
+  .presence-row,
+  .race-result-card,
+  .race-result-card.left,
+  .race-leave-card {
+    background: var(--surface);
+    border-color: var(--border);
+  }
+
+  .opponent-pressure {
+    border-color: var(--border);
+    background: var(--surface-2);
+    color: var(--text);
   }
 }

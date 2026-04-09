@@ -69,6 +69,7 @@
   const walkthroughSkipBtn = document.getElementById("walkthrough-skip");
   const walkthroughPrevBtn = document.getElementById("walkthrough-prev");
   const walkthroughNextBtn = document.getElementById("walkthrough-next");
+  const walkthroughAccountBtn = document.getElementById("walkthrough-account");
 
   const wordCache = {};
 
@@ -128,6 +129,8 @@
   let dayRolloverTimeout = null;
   let hasTriggeredDayReset = false;
   let loaderFailsafeTimer = null;
+  let walkthroughLengthTimer = null;
+  let walkthroughLengthFrame = 0;
 
   function safeHardRefresh(delay = 220) {
     const url = new URL(window.location.href);
@@ -158,31 +161,31 @@
     {
       title: "Welcome to Wordle Unbound",
       body: "Guess the hidden daily word by typing letters and submitting with ENTER. Every day has a fresh word.",
-      colors: false,
+      demo: "intro",
       pulse: false
     },
     {
       title: "Green and yellow feedback",
       body: "Green means correct letter in the exact spot. Yellow means correct letter but wrong position.",
-      colors: true,
+      demo: "colors",
       pulse: false
     },
     {
       title: "Word length changes by day",
       body: "Some days are short, some are longer. The board and allowed tries automatically adjust to today’s word length.",
-      colors: false,
+      demo: "length",
       pulse: false
     },
     {
       title: "Hints can save a run",
       body: "Use hints when stuck. They can reveal patterns, letters, or eliminate options depending on word length.",
-      colors: false,
+      demo: "hint",
       pulse: false
     },
     {
       title: "Create an account for the full experience",
       body: "Accounts unlock synced progress, race mode, and leaderboard placement — this is where the real competition happens.",
-      colors: false,
+      demo: "account",
       pulse: true
     }
   ];
@@ -307,8 +310,120 @@
     localStorage.setItem(walkthroughKey, "1");
   }
 
+  function clearWalkthroughLengthAnimation() {
+    if (!walkthroughLengthTimer) return;
+    clearInterval(walkthroughLengthTimer);
+    walkthroughLengthTimer = null;
+  }
+
+  function renderLengthTransitionFrame() {
+    if (!walkthroughDemo) return;
+    const frames = [
+      { word: "STARS", length: 5 },
+      { word: "GALAXY", length: 6 },
+      { word: "ROCKETS", length: 7 }
+    ];
+    const frame = frames[walkthroughLengthFrame % frames.length];
+    walkthroughLengthFrame += 1;
+
+    const chars = frame.word.split("");
+    walkthroughDemo.innerHTML = `
+      <div class="walkthrough-row walkthrough-row-length" data-length="${frame.length}">
+        ${chars.map((char) => `<span class="walkthrough-tile w-demo-letter">${char}</span>`).join("")}
+      </div>
+      <div class="walkthrough-legend">
+        <span class="walkthrough-badge neutral">Today can be ${frame.length} letters</span>
+      </div>
+    `;
+    walkthroughDemo.classList.add("length-transition");
+  }
+
+  function clearWalkthroughTransientState() {
+    clearWalkthroughLengthAnimation();
+    walkthroughDemo?.classList.remove("show-colors", "length-transition");
+    hintButton?.classList.remove("walkthrough-hint-focus");
+  }
+
+  function renderWalkthroughDemo(step) {
+    if (!walkthroughDemo) return;
+    clearWalkthroughTransientState();
+
+    if (step.demo === "colors") {
+      walkthroughDemo.innerHTML = `
+        <div class="walkthrough-row">
+          <span class="walkthrough-tile w-demo-letter">W</span>
+          <span class="walkthrough-tile w-demo-letter">O</span>
+          <span class="walkthrough-tile w-demo-letter">R</span>
+          <span class="walkthrough-tile w-demo-letter">D</span>
+          <span class="walkthrough-tile w-demo-letter">S</span>
+        </div>
+        <div class="walkthrough-legend">
+          <span class="walkthrough-badge correct">Green = right spot</span>
+          <span class="walkthrough-badge present">Yellow = right letter, wrong spot</span>
+        </div>
+      `;
+      walkthroughDemo.classList.add("show-colors");
+      return;
+    }
+
+    if (step.demo === "length") {
+      walkthroughLengthFrame = 0;
+      renderLengthTransitionFrame();
+      walkthroughLengthTimer = window.setInterval(renderLengthTransitionFrame, 1000);
+      return;
+    }
+
+    if (step.demo === "hint") {
+      walkthroughDemo.innerHTML = `
+        <div class="walkthrough-row">
+          <span class="walkthrough-tile w-demo-letter">H</span>
+          <span class="walkthrough-tile w-demo-letter">I</span>
+          <span class="walkthrough-tile w-demo-letter">N</span>
+          <span class="walkthrough-tile w-demo-letter">T</span>
+          <span class="walkthrough-tile w-demo-letter">S</span>
+        </div>
+        <div class="walkthrough-legend">
+          <span class="walkthrough-badge neutral">Tap the lightbulb button for help when you’re stuck.</span>
+        </div>
+      `;
+      hintButton?.classList.add("walkthrough-hint-focus");
+      return;
+    }
+
+    if (step.demo === "account") {
+      walkthroughDemo.innerHTML = `
+        <div class="walkthrough-row">
+          <span class="walkthrough-tile w-demo-letter">R</span>
+          <span class="walkthrough-tile w-demo-letter">A</span>
+          <span class="walkthrough-tile w-demo-letter">C</span>
+          <span class="walkthrough-tile w-demo-letter">E</span>
+          <span class="walkthrough-tile w-demo-letter">S</span>
+        </div>
+        <div class="walkthrough-legend">
+          <span class="walkthrough-badge neutral">Play without an account, or sign in to join leaderboards and race mode.</span>
+        </div>
+      `;
+      return;
+    }
+
+    walkthroughDemo.innerHTML = `
+      <div class="walkthrough-row">
+        <span class="walkthrough-tile w-demo-letter">W</span>
+        <span class="walkthrough-tile w-demo-letter">O</span>
+        <span class="walkthrough-tile w-demo-letter">R</span>
+        <span class="walkthrough-tile w-demo-letter">D</span>
+        <span class="walkthrough-tile w-demo-letter">L</span>
+        <span class="walkthrough-tile w-demo-letter">E</span>
+      </div>
+      <div class="walkthrough-legend">
+        <span class="walkthrough-badge neutral">One fresh puzzle every day.</span>
+      </div>
+    `;
+  }
+
   function closeWalkthrough(markSeen = true) {
     if (markSeen) setWalkthroughSeen();
+    clearWalkthroughTransientState();
     walkthroughModal?.classList.add("hidden");
   }
 
@@ -318,10 +433,14 @@
     walkthroughTitle.textContent = step.title;
     walkthroughText.textContent = step.body;
     walkthroughStepIndicator.textContent = `${walkthroughStep + 1} / ${walkthroughSteps.length}`;
-    walkthroughDemo.classList.toggle("show-colors", Boolean(step.colors));
+    renderWalkthroughDemo(step);
     walkthroughCard?.classList.toggle("pulse-account", Boolean(step.pulse));
+    const isLastStep = walkthroughStep === walkthroughSteps.length - 1;
+    const hideSkip = walkthroughStep >= 3;
+    walkthroughSkipBtn?.classList.toggle("hidden", hideSkip);
     walkthroughPrevBtn.disabled = walkthroughStep === 0;
-    walkthroughNextBtn.textContent = walkthroughStep === walkthroughSteps.length - 1 ? "Start playing" : "Next";
+    walkthroughNextBtn.textContent = isLastStep ? "Start without account" : "Next";
+    walkthroughAccountBtn?.classList.toggle("hidden", !isLastStep);
   }
 
   function openWalkthrough() {
@@ -333,10 +452,11 @@
   function maybeShowFirstTimeWalkthrough() {
     const userData = getUserData();
     const seen = localStorage.getItem(walkthroughKey) === "1";
-    if (seen) return;
-    if (userData?.username) return;
-    if (raceLoginIntent) return;
-    window.setTimeout(() => openWalkthrough(), 260);
+    if (seen) return false;
+    if (userData?.username) return false;
+    if (raceLoginIntent) return false;
+    openWalkthrough();
+    return true;
   }
 
   function hideAppLoader() {
@@ -546,7 +666,10 @@
       usernameError.classList.add("hidden");
     });
 
-    walkthroughSkipBtn?.addEventListener("click", () => closeWalkthrough(true));
+    walkthroughSkipBtn?.addEventListener("click", () => {
+      closeWalkthrough(true);
+      openAuthModal("Create an account to join races and the leaderboard. You can close this anytime.");
+    });
     walkthroughPrevBtn?.addEventListener("click", () => {
       walkthroughStep = Math.max(0, walkthroughStep - 1);
       renderWalkthroughStep();
@@ -558,6 +681,10 @@
       }
       walkthroughStep += 1;
       renderWalkthroughStep();
+    });
+    walkthroughAccountBtn?.addEventListener("click", () => {
+      closeWalkthrough(true);
+      openAuthModal("Create an account for the full Wordle Unbound experience.");
     });
     walkthroughModal?.addEventListener("click", (e) => {
       if (e.target === walkthroughModal) closeWalkthrough(true);

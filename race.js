@@ -90,6 +90,12 @@
   let lastBackPressTs = 0;
   const wordValidationCache = {};
 
+  function syncViewportHeight() {
+    const rawHeight = window.visualViewport?.height || window.innerHeight;
+    const safeHeight = Math.max(320, Math.round(rawHeight));
+    document.documentElement.style.setProperty("--app-height", `${safeHeight}px`);
+  }
+
   function hideLoader() {
     if (!appLoader) return;
     setTimeout(() => appLoader.classList.add("is-hidden"), 140);
@@ -1146,6 +1152,11 @@
       });
     }
   });
+
+  syncViewportHeight();
+  window.addEventListener("resize", syncViewportHeight, { passive: true });
+  window.addEventListener("orientationchange", syncViewportHeight, { passive: true });
+  window.visualViewport?.addEventListener("resize", syncViewportHeight, { passive: true });
 
   ensureAuthenticatedUser().then(async (ok) => {
     if (ok) {

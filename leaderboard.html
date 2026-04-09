@@ -18,6 +18,7 @@
     })();
   </script>
   <title>Wordle Unbound • Leaderboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236aaa64'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='60' fill='white' font-family='sans-serif' font-weight='bold'>W</text></svg>" />
   <style>
     :root {
       --bg: #f5f7fb;
@@ -46,6 +47,7 @@
 
     body {
       min-height: 100dvh;
+      background: var(--bg);
       background:
         radial-gradient(48rem 25rem at -10% -20%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 62%),
         radial-gradient(48rem 25rem at 110% -20%, color-mix(in srgb, #60a5fa 18%, transparent), transparent 62%),
@@ -120,8 +122,10 @@
     }
 
     .shell {
+      border: 1px solid var(--border);
       border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
       border-radius: 24px;
+      background: var(--surface);
       background: color-mix(in srgb, var(--surface) 93%, transparent);
       box-shadow: var(--shadow);
       padding: 1rem;
@@ -202,8 +206,10 @@
       justify-content: space-between;
       align-items: center;
       gap: 0.7rem;
+      border: 1px solid var(--border);
       border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
       border-radius: 15px;
+      background: var(--surface);
       background: linear-gradient(150deg, color-mix(in srgb, var(--surface) 88%, #fff 12%), var(--surface));
       padding: 0.78rem 0.92rem;
       transition: transform 160ms ease, box-shadow 180ms ease, border-color 180ms ease;
@@ -285,7 +291,6 @@
       text-overflow: ellipsis;
       font-weight: 760;
     }
-
     .you {
       margin-left: 0.35rem;
       opacity: 0.66;
@@ -363,9 +368,29 @@
       color: var(--muted);
       font-weight: 700;
       padding: 1.9rem 1rem;
+      border: 1px dashed var(--border);
       border: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
       border-radius: 14px;
+      background: var(--surface-2);
       background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+    }
+
+    @supports not (color: color-mix(in srgb, white 50%, black)) {
+      body {
+        background: var(--bg);
+      }
+
+      .shell,
+      .lb-progress,
+      .item,
+      .state {
+        background: var(--surface);
+        border-color: var(--border);
+      }
+
+      .lb-progress__bar {
+        background: linear-gradient(90deg, #6aaa64, #5b9956);
+      }
     }
 
     @keyframes rise {
