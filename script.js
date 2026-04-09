@@ -6,7 +6,9 @@
       if (key.startsWith("wordle-")) localStorage.removeItem(key);
     });
     localStorage.setItem("wordle-version", CURRENT_VERSION);
-    window.location.reload(true);
+    const fresh = new URL(window.location.href);
+    fresh.searchParams.set("_refresh", String(Date.now()));
+    window.location.replace(fresh.toString());
     return;
   }
   // ---------------------------------------------
@@ -14,7 +16,7 @@
   // --- SUPABASE CONFIGURATION ---
   const supabaseUrl = 'https://hcehsxnudbwjydvenlfz.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8';
-  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  const supabase = window.supabase?.createClient ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 
   const WORD_SOURCE = "supabase";
   const GUESS_SCALE = 10;
@@ -106,6 +108,12 @@
   const raceLoginIntent = pageParams.get("raceLogin") === "1";
   const raceRoomIntent = (pageParams.get("room") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
 
+  if (pageParams.has("_refresh")) {
+    const clean = new URL(window.location.href);
+    clean.searchParams.delete("_refresh");
+    window.history.replaceState({}, "", clean);
+  }
+
   let currentRow = 0;
   let currentGuess = "";
   let boardState = [];
@@ -119,6 +127,31 @@
   let noonReminderInterval = null;
   let dayRolloverTimeout = null;
   let hasTriggeredDayReset = false;
+  let loaderFailsafeTimer = null;
+
+  function safeHardRefresh(delay = 220) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("_refresh", String(Date.now()));
+    window.setTimeout(() => {
+      window.location.replace(url.toString());
+    }, delay);
+  }
+
+  function armLoaderFailsafe(timeoutMs = 9000) {
+    if (loaderFailsafeTimer) clearTimeout(loaderFailsafeTimer);
+    loaderFailsafeTimer = window.setTimeout(() => {
+      hideAppLoader();
+      if (!gameOver) {
+        showMessage("Loading took too long. You can keep playing or refresh.");
+      }
+    }, timeoutMs);
+  }
+
+  function clearLoaderFailsafe() {
+    if (!loaderFailsafeTimer) return;
+    clearTimeout(loaderFailsafeTimer);
+    loaderFailsafeTimer = null;
+  }
   let walkthroughStep = 0;
 
   const walkthroughSteps = [
@@ -168,7 +201,7 @@
   }
 
   async function fetchTodaysWord() {
-    if (WORD_SOURCE === "supabase") {
+    if (WORD_SOURCE === "supabase" && supabase) {
       try {
         const { data, error } = await supabase.from('words').select('word, category').eq('day_index', solutionIndex).single();
         if (error) throw error;
@@ -224,6 +257,8 @@
     }
   }
 
+  armLoaderFailsafe();
+
   fetchTodaysWord().then(() => {
     boardState = Array.from({ length: maxRows }, () => null);
 
@@ -248,8 +283,6 @@
     bindEvents();
     initializeDailyNotifications();
   scheduleDayRolloverReset();
-    hideAppLoader();
-
     if (raceLoginIntent) {
       openAuthModal("Login to continue to Race Lobby.");
       usernameView.classList.remove("hidden");
@@ -263,6 +296,11 @@
     if (gameOver) showEndModal(Boolean(savedState?.won));
 
     maybeShowFirstTimeWalkthrough();
+  }).catch((err) => {
+    console.error("Initialization failed:", err);
+    showMessage("Something failed to load. Please try again.");
+  }).finally(() => {
+    hideAppLoader();
   });
 
   function setWalkthroughSeen() {
@@ -303,6 +341,7 @@
 
   function hideAppLoader() {
     if (!appLoader) return;
+    clearLoaderFailsafe();
     // Small delay so the transition feels intentional and smooth.
     window.setTimeout(() => {
       appLoader.classList.add("is-hidden");
@@ -328,7 +367,7 @@
     }
 
     showAppLoader("Loading next puzzle…");
-    window.setTimeout(() => window.location.reload(), 220);
+    safeHardRefresh(220);
   }
 
   function msUntilNextWordChange() {
@@ -560,10 +599,11 @@
             userData.username = name;
             localStorage.setItem(userKey, JSON.stringify(userData));
 
-        if (!raceLoginIntent && existingUser.saved_state && existingUser.saved_state.solutionIndex === solutionIndex) {
-               localStorage.setItem(storageKey, JSON.stringify(existingUser.saved_state));
-               window.location.reload(); 
-               return;
+   if (!raceLoginIntent && existingUser.saved_state && existingUser.saved_state.solutionIndex === solutionIndex) {
+     localStorage.setItem(storageKey, JSON.stringify(existingUser.saved_state));
+     showAppLoader("Syncing your account…");
+     safeHardRefresh(220);
+     return;
             }
           } else {
             usernameError.textContent = "Username taken or wrong password.";
@@ -785,9 +825,7 @@
     refreshAccountMenuAction();
 
     showAppLoader("Refreshing...");
-    window.setTimeout(() => {
-      window.location.reload();
-    }, 220);
+    safeHardRefresh(220);
   }
 
   function refreshAccountMenuAction() {
