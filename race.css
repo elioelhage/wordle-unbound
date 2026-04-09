@@ -1,0 +1,463 @@
+.race-shell {
+  min-height: var(--app-height, 100dvh);
+  overflow-y: auto;
+}
+
+.race-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+#race-back-button {
+  touch-action: manipulation;
+  transition: transform 120ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+#race-back-button:hover {
+  transform: translateY(-1px);
+}
+
+#race-back-button:active,
+#race-back-button.pressed {
+  transform: translateY(1px) scale(0.98);
+}
+
+.race-main {
+  flex: 1;
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+  min-height: 0;
+  padding-bottom: 1.4rem;
+}
+
+.race-create-stage {
+  min-height: calc(100dvh - 10.5rem);
+  display: grid;
+  place-items: center;
+}
+
+.race-entry-card {
+  width: min(95vw, 30rem);
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: var(--shadow);
+}
+
+.race-create-btn {
+  max-width: 100%;
+  background: linear-gradient(140deg, color-mix(in srgb, var(--correct) 74%, #fff 26%), var(--correct));
+  color: #fff;
+  letter-spacing: 0.03em;
+  border: 1px solid color-mix(in srgb, var(--correct) 72%, #000 28%);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--correct) 36%, transparent);
+}
+
+.race-create-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+}
+
+.race-card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.race-card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.race-card p {
+  margin: 0.45rem 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.join-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+}
+
+.room-card {
+  background: color-mix(in srgb, var(--correct) 11%, var(--surface));
+}
+
+.room-code-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.2rem;
+}
+
+.room-meta {
+  display: grid;
+  gap: 0.38rem;
+  margin-bottom: 0.75rem;
+}
+
+.room-meta__label {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.room-code {
+  font-size: 2rem;
+  letter-spacing: 0.15em;
+}
+
+.race-inline-icon {
+  width: 2.35rem;
+  height: 2.35rem;
+}
+
+.race-join-row .text-input {
+  margin-top: 0;
+  border-radius: 12px;
+  border-width: 2px;
+}
+
+.race-join-row .primary-button {
+  width: auto;
+  min-width: 6.2rem;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+.room-actions {
+  margin-top: 0.7rem;
+}
+
+#ready-btn {
+  background: linear-gradient(140deg, color-mix(in srgb, var(--correct) 70%, #fff 30%), var(--correct));
+  color: #fff;
+  border: 1px solid color-mix(in srgb, var(--correct) 76%, #000 24%);
+  box-shadow: 0 9px 20px color-mix(in srgb, var(--correct) 30%, transparent);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#ready-btn.is-ready {
+  background: linear-gradient(140deg, #3f8f4d, #2f7a40);
+  color: #fff;
+  border-color: #2b6f39;
+  box-shadow: 0 10px 22px rgba(47, 122, 64, 0.34);
+}
+
+#ready-btn:disabled {
+  opacity: 0.92;
+}
+
+.player-presence {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.presence-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  padding: 0.56rem 0.7rem;
+}
+
+.presence-name {
+  font-weight: 800;
+  color: color-mix(in srgb, var(--correct) 65%, var(--text));
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presence-ready {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 0.2rem 0.56rem;
+  border: 1px solid transparent;
+}
+
+.presence-ready.ready {
+  color: #fff;
+  background: var(--correct);
+  border-color: color-mix(in srgb, var(--correct) 78%, black 22%);
+}
+
+.presence-ready.not-ready {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface-2) 74%, transparent);
+  border-color: color-mix(in srgb, var(--border) 74%, transparent);
+}
+
+.race-status {
+  margin: 0.9rem 0 0;
+  min-height: 1.25rem;
+  color: var(--muted);
+  font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 74%, transparent);
+  border-radius: 11px;
+  padding: 0.48rem 0.6rem;
+}
+
+.race-status.info {
+  color: var(--muted);
+}
+
+.race-status.success {
+  color: color-mix(in srgb, var(--correct) 78%, var(--text));
+  border-color: color-mix(in srgb, var(--correct) 46%, var(--border));
+  background: color-mix(in srgb, var(--correct) 12%, transparent);
+}
+
+.race-status.warn {
+  color: color-mix(in srgb, #f59e0b 72%, var(--text));
+  border-color: color-mix(in srgb, #f59e0b 38%, var(--border));
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+}
+
+.race-status.loud {
+  color: color-mix(in srgb, #3b82f6 72%, var(--text));
+  border-color: color-mix(in srgb, #3b82f6 42%, var(--border));
+  background: color-mix(in srgb, #3b82f6 12%, transparent);
+}
+
+.opponent-pressure {
+  margin: 0.58rem 0 0;
+  min-height: 1.25rem;
+  color: color-mix(in srgb, var(--present) 70%, var(--text));
+  font-weight: 900;
+  font-size: 0.98rem;
+  border: 1px solid color-mix(in srgb, var(--present) 35%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--present) 14%, transparent);
+  padding: 0.45rem 0.62rem;
+  letter-spacing: 0.01em;
+}
+
+.opponent-pressure.pressure-pulse {
+  animation: pressurePulse 0.42s ease;
+}
+
+@keyframes pressurePulse {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.race-game-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.race-game-top__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.48rem;
+}
+
+.race-stopwatch {
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  font-size: 1rem;
+  padding: 0.38rem 0.62rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.race-leave-top-btn {
+  border: 1px solid color-mix(in srgb, #dc2626 48%, var(--border));
+  background: color-mix(in srgb, #dc2626 12%, var(--surface));
+  color: color-mix(in srgb, #dc2626 78%, var(--text));
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 0.42rem 0.62rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.race-leave-top-btn:active {
+  transform: translateY(1px);
+}
+
+#race-game .board-wrap {
+  margin-top: 0.35rem;
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: min(40vh, 19rem);
+  max-height: min(40vh, 19rem);
+  overflow-y: auto;
+  overflow-anchor: none;
+  padding-right: 0.25rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#race-game .board-wrap::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+#race-game .board {
+  margin: 0 auto;
+  align-content: start;
+}
+
+#race-game .keyboard-wrap {
+  margin-top: 0.3rem;
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  background: var(--bg);
+  padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+}
+
+.race-game-stage {
+  min-height: calc(100dvh - 10.5rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.race-row-shake {
+  animation: raceRowShake 0.34s ease;
+}
+
+@keyframes raceRowShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.race-result-card {
+  border-radius: 24px;
+  background: var(--surface);
+  background:
+    radial-gradient(120% 85% at 0% 0%, color-mix(in srgb, var(--correct) 12%, transparent), transparent 58%),
+    linear-gradient(165deg, color-mix(in srgb, var(--bg) 90%, var(--surface) 10%), var(--surface));
+}
+
+.race-result-card.win {
+  border-color: color-mix(in srgb, var(--correct) 55%, var(--border));
+}
+
+.race-result-card.lose {
+  border-color: color-mix(in srgb, var(--present) 48%, var(--border));
+}
+
+.race-result-card.left {
+  border-color: color-mix(in srgb, #3b82f6 60%, var(--border));
+  background: var(--surface);
+  background:
+    radial-gradient(120% 85% at 0% 0%, color-mix(in srgb, #3b82f6 14%, transparent), transparent 58%),
+    linear-gradient(165deg, color-mix(in srgb, var(--bg) 90%, var(--surface) 10%), var(--surface));
+}
+
+.race-result-card.draw {
+  border-color: color-mix(in srgb, #60a5fa 58%, var(--border));
+  background:
+    radial-gradient(120% 85% at 0% 0%, color-mix(in srgb, #60a5fa 14%, transparent), transparent 58%),
+    linear-gradient(165deg, color-mix(in srgb, var(--bg) 90%, var(--surface) 10%), var(--surface));
+}
+
+.race-leave-card {
+  border-radius: 24px;
+  background: var(--surface);
+  background:
+    radial-gradient(120% 85% at 0% 0%, color-mix(in srgb, var(--present) 10%, transparent), transparent 58%),
+    linear-gradient(165deg, color-mix(in srgb, var(--bg) 90%, var(--surface) 10%), var(--surface));
+}
+
+.race-leave-actions {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.race-leave-cancel {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.race-leave-confirm {
+  background: linear-gradient(140deg, #dc2626, #b91c1c);
+  color: #fff;
+}
+
+@media (max-width: 620px) {
+  #race-game .board-wrap {
+    height: min(30vh, 13rem);
+    max-height: min(30vh, 13rem);
+    padding-right: 0;
+  }
+
+  #race-game .board {
+    align-content: start;
+  }
+
+  .race-game-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .race-game-top__actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .room-code {
+    font-size: 1.6rem;
+  }
+}
+
+@supports not (color: color-mix(in srgb, white 50%, black)) {
+  .race-entry-card,
+  .presence-row,
+  .race-result-card,
+  .race-result-card.left,
+  .race-leave-card {
+    background: var(--surface);
+    border-color: var(--border);
+  }
+
+  .opponent-pressure {
+    border-color: var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+  }
+}

@@ -4,13 +4,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#121213" />
-  <title>Wordle Unbound</title>
+  <script>
+    (function () {
+      try {
+        var key = "wordle-mobile-theme";
+        var saved = localStorage.getItem(key);
+        var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var theme = saved || (prefersDark ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) {
+          var color = theme === "dark" ? "#121213" : (theme === "passaflora" ? "#eaf9ef" : "#ffffff");
+          meta.setAttribute("content", color);
+        }
+      } catch (_) {}
+    })();
+  </script>
+  <title>WordShift</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236aaa64'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='60' fill='white' font-family='sans-serif' font-weight='bold'>W</text></svg>" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <div id="app-loader" class="app-loader" role="status" aria-live="polite" aria-label="Loading Wordle Unbound">
+  <div id="app-loader" class="app-loader" role="status" aria-live="polite" aria-label="Loading WordShift">
     <div class="loader-card">
       <div class="loader-grid" aria-hidden="true">
         <span class="loader-tile">W</span>
@@ -20,7 +36,7 @@
         <span class="loader-tile">L</span>
         <span class="loader-tile">E</span>
       </div>
-      <p class="loader-text">Loading today’s puzzle…</p>
+  <p class="loader-text">Loading WordShift…</p>
     </div>
   </div>
 
@@ -34,19 +50,20 @@
             <path d="M3 9h18"></path>
             <path d="M9 21V9"></path>
           </svg>
-          <h1>Wordle Unbound</h1>
+          <h1>WordShift</h1>
         </div>
         <p class="author-credit">Made by Elio El Hage</p>
       </div>
 
       <div class="topbar__right">
-        <a class="icon-button" href="https://elioelhage.github.io/wordle-stars/" aria-label="Open Wordle Stars" title="Wordle Stars">
+  <a id="race-lobby-button" class="icon-button" href="race.html" aria-label="Open race lobby" title="Race lobby">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 2 14.7 8.3 21.5 9 16.4 13.3 17.9 20 12 16.4 6.1 20 7.6 13.3 2.5 9 9.3 8.3Z"></path>
+            <path d="M5 3v18"></path>
+            <path d="M5 4h12l-2.2 4 2.2 4H5"></path>
           </svg>
         </a>
 
-        <button id="leaderboard-button" class="icon-button" type="button" aria-label="Leaderboards">
+        <button id="leaderboard-button" class="icon-button" type="button" aria-label="Leaderboards" title="Leaderboards">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
             <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
@@ -70,13 +87,19 @@
           <svg id="theme-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
         </button>
 
-        <!-- MOVE: Leaderboard logout into the topbar so it doesn't collide with the modal close -->
-        <button id="leaderboard-logout-button" class="leaderboard-logout" type="button" aria-label="Log out" title="Log out" style="display:none;">
-          <svg viewBox="0 0 24 24">
-            <path d="M16 17l5-5-5-5M21 12H9"></path>
-            <path d="M13 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8"></path>
-          </svg>
-        </button>
+        <div class="account-menu-wrap">
+          <button id="account-menu-button" class="icon-button" type="button" aria-label="Account menu" title="Account menu" aria-expanded="false" aria-controls="account-menu-panel">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <circle cx="5" cy="12" r="2"></circle>
+              <circle cx="12" cy="12" r="2"></circle>
+              <circle cx="19" cy="12" r="2"></circle>
+            </svg>
+          </button>
+          <div id="account-menu-panel" class="account-menu-panel hidden" role="menu" aria-label="Account actions">
+            <button id="account-action-btn" class="account-menu-item" type="button" role="menuitem">Sign in / Sign up</button>
+            <button id="passaflora-theme-btn" class="account-menu-item" type="button" role="menuitem">Passaflora theme</button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -122,16 +145,44 @@
       <div id="stats-view" class="hidden">
         <div class="lb-header">
           <h2 class="modal__title">Leaderboards</h2>
-          <!-- removed logout button from here -->
-        </div>
-        <div class="tabs">
-          <button class="tab-btn active" data-tab="avg">Avg Guesses</button>
-          <button class="tab-btn" data-tab="streak">Winstreak</button>
         </div>
         <div class="tab-content">
           <div id="lb-loading" class="lb-loading">Loading...</div>
           <ul id="lb-list" class="lb-list hidden"></ul>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="walkthrough-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="walkthrough-title">
+    <div class="modal__card walkthrough-card">
+      <p class="modal__kicker">First-time guide</p>
+  <h2 id="walkthrough-title" class="modal__title">Welcome to WordShift</h2>
+      <p id="walkthrough-text" class="modal__countdown"></p>
+
+      <div id="walkthrough-demo" class="walkthrough-demo" aria-hidden="true">
+        <div class="walkthrough-row">
+          <span class="walkthrough-tile w-demo-letter">W</span>
+          <span class="walkthrough-tile w-demo-letter">O</span>
+          <span class="walkthrough-tile w-demo-letter">R</span>
+          <span class="walkthrough-tile w-demo-letter">D</span>
+          <span class="walkthrough-tile w-demo-letter">S</span>
+        </div>
+        <div class="walkthrough-legend">
+          <span class="walkthrough-badge correct">Green = right spot</span>
+          <span class="walkthrough-badge present">Yellow = right letter, wrong spot</span>
+        </div>
+      </div>
+
+      <div class="walkthrough-progress">
+        <span id="walkthrough-step-indicator">1 / 5</span>
+      </div>
+
+      <div class="walkthrough-actions">
+        <button id="walkthrough-skip" class="primary-button walkthrough-skip" type="button">Skip</button>
+        <button id="walkthrough-prev" class="primary-button walkthrough-prev" type="button">Back</button>
+        <button id="walkthrough-next" class="primary-button" type="button">Next</button>
+        <button id="walkthrough-account" class="primary-button walkthrough-account hidden" type="button">Play with account</button>
       </div>
     </div>
   </div>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+	<meta name="theme-color" content="#121213" />
+	<script>
+		(function () {
+			try {
+				var key = "wordle-mobile-theme";
+				var saved = localStorage.getItem(key);
+				var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+				var theme = saved || (prefersDark ? "dark" : "light");
+				document.documentElement.setAttribute("data-theme", theme);
+				document.body && document.body.setAttribute("data-theme", theme);
+				var meta = document.querySelector('meta[name="theme-color"]');
+				if (meta) meta.setAttribute("content", theme === "dark" ? "#121213" : "#ffffff");
+			} catch (_) {}
+		})();
+	</script>
+	<title>WordShift — Race Lobby</title>
+	<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236aaa64'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='60' fill='white' font-family='sans-serif' font-weight='bold'>W</text></svg>" />
+	<link rel="stylesheet" href="style.css" />
+	<link rel="stylesheet" href="race.css" />
+</head>
+<body>
+	<div class="app-shell race-shell">
+		<header class="topbar race-topbar">
+			<div class="topbar__left">
+				<p class="eyebrow">Multiplayer</p>
+				<div class="title-wrap">
+					<svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M5 3v18"></path>
+						<path d="M5 4h9l-2 3 2 3H5"></path>
+						<path d="M19 8v13"></path>
+						<path d="M19 9h-8l2 3-2 3h8"></path>
+					</svg>
+					<h1>Race Lobby</h1>
+				</div>
+			</div>
+
+			<div class="topbar__right">
+				<a id="race-back-button" class="icon-button" href="index.html" aria-label="Back to game" title="Back to game">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="m15 18-6-6 6-6"></path>
+					</svg>
+				</a>
+			</div>
+		</header>
+
+		<main class="race-main">
+			<section id="create-stage" class="race-create-stage">
+				<div class="race-entry-card">
+					<button id="create-room-btn" class="primary-button race-create-btn" type="button">Create Room</button>
+					<div class="join-row race-join-row">
+						<input id="join-code-input" class="text-input" type="text" maxlength="6" placeholder="Enter room code" autocomplete="off" />
+						<button id="join-code-btn" class="primary-button" type="button">Join</button>
+					</div>
+				</div>
+			</section>
+
+			<section class="race-card room-card hidden" id="room-card">
+				<h2 id="room-role">You are Host</h2>
+				<p id="room-hint">Share this code with your challenger.</p>
+
+				<div class="room-code-row">
+					<strong id="room-code" class="room-code">------</strong>
+					<button id="copy-code-btn" class="icon-button race-inline-icon" type="button" aria-label="Copy room code" title="Copy room code">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<rect x="9" y="9" width="13" height="13" rx="2"></rect>
+							<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+						</svg>
+					</button>
+					<button id="copy-link-btn" class="icon-button race-inline-icon" type="button" aria-label="Copy invite link" title="Copy invite link">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10 5"></path>
+							<path d="M14 11a5 5 0 0 0-7.07 0l-1.41 1.41a5 5 0 1 0 7.07 7.07L14 19"></path>
+						</svg>
+					</button>
+				</div>
+
+				<input id="room-link" class="text-input hidden" type="text" readonly />
+
+				<div class="player-presence" aria-live="polite">
+					<div class="presence-row" id="presence-self-row">
+						<span class="presence-name" id="presence-self-name">You</span>
+						<span class="presence-ready" id="presence-self-ready">Not ready</span>
+					</div>
+					<div class="presence-row" id="presence-opponent-row">
+						<span class="presence-name" id="presence-opponent-name">Waiting for opponent…</span>
+						<span class="presence-ready" id="presence-opponent-ready">Not ready</span>
+					</div>
+				</div>
+
+				<div class="room-actions">
+					<button id="ready-btn" class="primary-button" type="button">Ready</button>
+				</div>
+
+				<p id="race-status" class="race-status" aria-live="polite"></p>
+			</section>
+
+			<section id="race-game" class="race-card hidden race-game-stage">
+				<div class="race-game-top">
+					<h2>Race</h2>
+					<div class="race-game-top__actions">
+						<div id="race-stopwatch" class="race-stopwatch">00:00.00</div>
+						<button id="race-leave-button" class="race-leave-top-btn" type="button">Leave room</button>
+					</div>
+				</div>
+				<p id="opponent-pressure" class="opponent-pressure" aria-live="polite"></p>
+				<p id="race-game-message" class="race-status" aria-live="polite">Waiting to start…</p>
+				<section class="board-wrap" aria-label="Race board">
+					<div id="race-board" class="board" aria-live="polite"></div>
+				</section>
+				<section class="keyboard-wrap" aria-label="Race keyboard">
+					<div id="race-keyboard" class="keyboard"></div>
+				</section>
+			</section>
+		</main>
+	</div>
+
+	<div id="race-result-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="race-result-title">
+		<div class="modal__card race-result-card">
+			<p class="modal__kicker" id="race-result-kicker">Race Complete</p>
+			<h2 class="modal__title" id="race-result-title">Result</h2>
+			<p class="modal__countdown" id="race-result-details"></p>
+			<button id="race-result-ok" class="primary-button" type="button">OK</button>
+		</div>
+	</div>
+
+	<div id="race-leave-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="race-leave-title">
+		<div class="modal__card race-leave-card">
+			<p class="modal__kicker">Leave room</p>
+			<h2 id="race-leave-title" class="modal__title">Leave this match?</h2>
+			<p class="modal__countdown">If you leave now, this room and match end for both players.</p>
+			<div class="race-leave-actions">
+				<button id="race-leave-cancel" class="primary-button race-leave-cancel" type="button">Stay</button>
+				<button id="race-leave-confirm" class="primary-button race-leave-confirm" type="button">Leave room</button>
+			</div>
+		</div>
+	</div>
+
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	<script src="race.js"></script>
+</body>
+</html>

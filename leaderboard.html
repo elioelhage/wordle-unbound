@@ -1,373 +1,697 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<meta name="theme-color" content="#121213" />
-	<title>Wordle Unbound • Leaderboards</title>
-	<style>
-		:root {
-			--bg: #f6f7fb;
-			--surface: #ffffff;
-			--surface-2: #eef1f7;
-			--text: #151821;
-			--muted: #6b7280;
-			--border: #dde3ef;
-			--accent: #6aaa64;
-			--accent-dark: #4f8e4b;
-			--shadow: 0 18px 45px rgba(18, 18, 19, 0.1);
-		}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#121213" />
+  <script>
+    (function () {
+      try {
+        var key = "wordle-mobile-theme";
+        var saved = localStorage.getItem(key);
+        var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var theme = saved || (prefersDark ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", theme === "dark" ? "#121213" : "#ffffff");
+      } catch (_) {}
+    })();
+  </script>
+  <title>WordShift • Leaderboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236aaa64'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='60' fill='white' font-family='sans-serif' font-weight='bold'>W</text></svg>" />
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-2: #eef2f8;
+      --text: #101726;
+      --muted: #64748b;
+      --border: #dbe3f0;
+      --accent: #6aaa64;
+      --shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
+    }
 
-		* { box-sizing: border-box; }
-		html, body { margin: 0; padding: 0; }
-		body {
-			min-height: 100vh;
-			font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-			color: var(--text);
-			background:
-				radial-gradient(60rem 30rem at -10% -20%, rgba(106, 170, 100, 0.18), transparent 62%),
-				radial-gradient(54rem 28rem at 110% -20%, rgba(106, 170, 100, 0.12), transparent 62%),
-				var(--bg);
-			line-height: 1.4;
-		}
+    :root[data-theme="dark"] {
+      --bg: #121213;
+      --surface: #1a1a1b;
+      --surface-2: #232325;
+      --text: #f5f5f5;
+      --muted: #a0a4af;
+      --border: #34363a;
+      --accent: #6aaa64;
+      --shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
+    }
 
-		.page {
-			width: min(980px, 94vw);
-			margin: 1.3rem auto;
-		}
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
 
-		.top {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			gap: 1rem;
-			margin-bottom: 1rem;
-		}
+    body {
+      min-height: 100dvh;
+      background: var(--bg);
+      background:
+        radial-gradient(48rem 25rem at -10% -20%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 62%),
+        radial-gradient(48rem 25rem at 110% -20%, color-mix(in srgb, #60a5fa 18%, transparent), transparent 62%),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height: 1.4;
+      padding: 0.95rem;
+    }
 
-		.brand {
-			display: flex;
-			align-items: center;
-			gap: 0.7rem;
-		}
+    .page {
+      width: min(980px, 100%);
+      margin: 0 auto;
+    }
 
-		.brand-icon {
-			width: 2rem;
-			height: 2rem;
-			color: var(--accent);
-		}
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.8rem;
+      margin-bottom: 0.9rem;
+    }
 
-		.kicker {
-			margin: 0;
-			font-size: 0.75rem;
-			letter-spacing: 0.14em;
-			text-transform: uppercase;
-			color: var(--muted);
-			font-weight: 700;
-		}
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.58rem;
+      min-width: 0;
+    }
 
-		h1 {
-			margin: 0.1rem 0 0;
-			font-size: clamp(1.35rem, 3vw, 2rem);
-			letter-spacing: 0.04em;
-		}
+    .title-icon {
+      width: 1.45rem;
+      height: 1.45rem;
+      color: var(--accent);
+      flex: 0 0 auto;
+    }
 
-		.back-link {
-			text-decoration: none;
-			color: var(--text);
-			background: var(--surface);
-			border: 1px solid var(--border);
-			border-radius: 999px;
-			padding: 0.55rem 0.9rem;
-			font-weight: 600;
-			box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-		}
+    .eyebrow {
+      margin: 0;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      font-weight: 700;
+    }
 
-		.board-shell {
-			background: var(--surface);
-			border: 1px solid var(--border);
-			border-radius: 24px;
-			padding: 1rem;
-			box-shadow: var(--shadow);
-		}
+    h1 {
+      margin: 0.12rem 0 0;
+      font-size: clamp(1.2rem, 4vw, 1.85rem);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
 
-		.tabs {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-			gap: 0.45rem;
-			padding: 0.35rem;
-			border-radius: 14px;
-			background: var(--surface-2);
-			border: 1px solid var(--border);
-			margin-bottom: 0.95rem;
-		}
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
 
-		.tab-btn {
-			border: 0;
-			background: transparent;
-			color: var(--muted);
-			border-radius: 10px;
-			padding: 0.62rem;
-			font-weight: 700;
-			cursor: pointer;
-			transition: 160ms ease;
-		}
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 0.52rem 0.88rem;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
 
-		.tab-btn:hover { color: var(--text); }
-		.tab-btn.active {
-			background: var(--text);
-			color: #fff;
-			box-shadow: 0 6px 14px rgba(17, 24, 39, 0.18);
-		}
+    .shell {
+      border: 1px solid var(--border);
+      border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+      border-radius: 24px;
+      background: var(--surface);
+      background: color-mix(in srgb, var(--surface) 93%, transparent);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+    }
 
-		.meta {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			gap: 1rem;
-			margin-bottom: 0.9rem;
-			color: var(--muted);
-			font-size: 0.9rem;
-		}
+    :root:not([data-theme="dark"]) .shell {
+      background:
+        radial-gradient(145% 120% at 0% 0%, rgba(106, 170, 100, 0.22), transparent 52%),
+        radial-gradient(120% 95% at 100% 0%, rgba(96, 165, 250, 0.16), transparent 58%),
+        linear-gradient(165deg, #0c0f14 0%, #171b24 48%, #0d1118 100%);
+      border-color: #34363a;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.36);
+    }
 
-		.list {
-			list-style: none;
-			margin: 0;
-			padding: 0;
-			display: flex;
-			flex-direction: column;
-			gap: 0.6rem;
-			max-height: min(70vh, 720px);
-			overflow: auto;
-			padding-right: 0.2rem;
-		}
+    :root:not([data-theme="dark"]) .shell .meta {
+      color: #a0a4af;
+    }
 
-		.item {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			background: linear-gradient(145deg, #ffffff, #f8f9fc);
-			border: 1px solid var(--border);
-			border-radius: 14px;
-			padding: 0.78rem 0.9rem;
-			font-weight: 600;
-		}
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.6rem;
+      align-items: center;
+      margin-bottom: 0.85rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
 
-		.item-left {
-			display: inline-flex;
-			align-items: center;
-			gap: 0.42rem;
-			min-width: 0;
-		}
+    .lb-progress {
+      height: 0.52rem;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+      background: color-mix(in srgb, var(--surface-2) 74%, transparent);
+      overflow: hidden;
+      margin-bottom: 0.82rem;
+      position: relative;
+      opacity: 0;
+      transform: translateY(-3px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
 
-		.rank {
-			min-width: 2.2rem;
-			color: var(--muted);
-			font-size: 0.82rem;
-			font-weight: 700;
-			letter-spacing: 0.04em;
-		}
+    .lb-progress.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
-		.name {
-			white-space: nowrap;
-			overflow: hidden;
-			text-overflow: ellipsis;
-			max-width: 18rem;
-		}
+    .lb-progress__bar {
+      height: 100%;
+      width: 44%;
+      border-radius: inherit;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          color-mix(in srgb, var(--accent) 86%, #fff 14%) 0,
+          color-mix(in srgb, var(--accent) 86%, #fff 14%) 16px,
+          color-mix(in srgb, #4f8e4b 88%, #fff 12%) 16px,
+          color-mix(in srgb, #4f8e4b 88%, #fff 12%) 28px
+        );
+      animation: lbBarSlide 1.1s ease-in-out infinite;
+      position: relative;
+    }
 
-		.you {
-			margin-left: 0.4rem;
-			color: var(--muted);
-			font-size: 0.82em;
-			font-weight: 500;
-		}
+    .lb-progress__bar::after {
+  content: "WSHIFT";
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 0.55rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      mix-blend-mode: overlay;
+    }
 
-		.score {
-			font-variant-numeric: tabular-nums;
-			font-weight: 800;
-		}
+    .list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.62rem;
+      max-height: min(74vh, 750px);
+      overflow-y: auto;
+      padding-right: 0.15rem;
+    }
 
-		.medal {
-			width: 1rem;
-			height: 1rem;
-			flex: 0 0 auto;
-		}
+    .item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.7rem;
+      border: 1px solid var(--border);
+      border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+      border-radius: 15px;
+      background: var(--surface);
+      background: linear-gradient(150deg, color-mix(in srgb, var(--surface) 88%, #fff 12%), var(--surface));
+      padding: 0.78rem 0.92rem;
+      transition: transform 160ms ease, box-shadow 180ms ease, border-color 180ms ease;
+      animation: rise 220ms ease both;
+    }
 
-		.item.rank-1 {
-			background: linear-gradient(135deg, #ffd700 0%, #f7b500 100%);
-			color: #231b05;
-			border-color: #f0c000;
-		}
-		.item.rank-2 {
-			background: linear-gradient(135deg, #efefef 0%, #cdcdcd 100%);
-			color: #222;
-			border-color: #b9b9b9;
-		}
-		.item.rank-3 {
-			background: linear-gradient(135deg, #dca06a 0%, #bf7a3f 100%);
-			color: #1f1208;
-			border-color: #a46633;
-		}
+    .item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.14);
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    }
 
-		.state {
-			text-align: center;
-			color: var(--muted);
-			font-weight: 600;
-			padding: 2.2rem 1rem;
-			border-radius: 14px;
-			border: 1px dashed var(--border);
-			background: var(--surface-2);
-		}
-	</style>
-	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    .item.rank-1 {
+      background:
+        radial-gradient(120% 100% at 0% 0%, rgba(255, 246, 190, 0.75), transparent 58%),
+        linear-gradient(140deg, #ffe37b 0%, #ffc93d 52%, #efb221 100%);
+      border: 1px solid #eebd3b;
+      color: #1f1a07;
+      box-shadow: 0 14px 28px rgba(255, 195, 45, 0.34);
+      padding: 1.22rem 1.28rem;
+    }
+
+    .item.rank-2 {
+      background:
+        radial-gradient(130% 105% at 0% 0%, rgba(255, 255, 255, 0.9), transparent 56%),
+        linear-gradient(145deg, #ffffff 0%, #e7edf6 45%, #bcc9da 100%);
+      border: 1px solid #8fa0b7;
+      color: #101726;
+      box-shadow: 0 14px 30px rgba(111, 130, 156, 0.38);
+      padding: 1.24rem 1.34rem;
+      min-height: 4.25rem;
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-2 {
+      background:
+        radial-gradient(135% 110% at 0% 0%, rgba(255, 255, 255, 0.95), transparent 55%),
+        linear-gradient(145deg, #ffffff 0%, #edf3fb 38%, #c9d4e4 72%, #b4c1d5 100%);
+      border-color: #8194ae;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.72),
+        inset 0 -1px 0 rgba(124, 142, 166, 0.28),
+        0 10px 20px rgba(118, 138, 164, 0.24);
+      outline: 1px solid rgba(120, 141, 169, 0.36);
+      outline-offset: -1px;
+    }
+
+    :root[data-theme="dark"] .item.rank-2 {
+      background:
+        radial-gradient(130% 105% at 0% 0%, rgba(248, 250, 252, 0.24), transparent 56%),
+        linear-gradient(145deg, #d9e2ef 0%, #9faec3 48%, #7789a3 100%);
+      border-color: #b6c2d5;
+      color: #0f172a;
+      box-shadow: 0 14px 30px rgba(146, 163, 186, 0.3);
+    }
+
+    .item.rank-3 {
+      background:
+        radial-gradient(120% 100% at 0% 0%, rgba(255, 241, 227, 0.6), transparent 58%),
+        linear-gradient(140deg, #ebb886 0%, #c78448 52%, #aa642d 100%);
+      border: 1px solid #9f5d2a;
+      color: #24160c;
+      box-shadow: 0 12px 24px rgba(170, 99, 44, 0.3);
+      padding: 1.1rem 1.22rem;
+      min-height: 3.85rem;
+    }
+
+    .item.rank-1 .rank,
+    .item.rank-1 .score {
+      font-size: 1.24rem;
+    }
+
+    .item.rank-2 .rank,
+    .item.rank-2 .score {
+      font-size: 1.18rem;
+    }
+
+    .item.rank-3 .rank,
+    .item.rank-3 .score {
+      font-size: 1.07rem;
+    }
+
+    .item.rank-1 .name {
+      font-size: 1.04rem;
+      font-weight: 820;
+    }
+
+    .item.rank-2 .name {
+      font-size: 1.04rem;
+      font-weight: 800;
+    }
+
+    .item.rank-3 .name {
+      font-size: 0.99rem;
+      font-weight: 790;
+    }
+
+    .item.rank-2 .medal {
+      width: 1.18rem;
+      height: 1.18rem;
+    }
+
+    .item.rank-3 .medal {
+      width: 1.1rem;
+      height: 1.1rem;
+    }
+
+    .left {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.46rem;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .rank {
+      min-width: 2.2rem;
+      font-size: 0.82rem;
+      letter-spacing: 0.06em;
+      font-weight: 900;
+      color: color-mix(in srgb, var(--muted) 88%, transparent);
+      flex: 0 0 auto;
+    }
+
+    .item.rank-1 .rank,
+    .item.rank-2 .rank,
+    .item.rank-3 .rank {
+      color: rgba(20, 20, 20, 0.65);
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-1 .rank,
+    :root:not([data-theme="dark"]) .item.rank-2 .rank,
+    :root:not([data-theme="dark"]) .item.rank-3 .rank {
+      font-size: 0.96rem;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      padding: 0.14rem 0.46rem;
+      border-radius: 999px;
+      line-height: 1;
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-1 .rank {
+      color: #5b4300;
+      background: rgba(255, 225, 120, 0.9);
+      box-shadow: inset 0 0 0 1px rgba(226, 173, 33, 0.6), 0 3px 10px rgba(239, 178, 33, 0.35);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-2 .rank {
+      color: #1f2c3f;
+      background: rgba(228, 236, 247, 0.96);
+      box-shadow: inset 0 0 0 1px rgba(137, 156, 180, 0.62), 0 3px 10px rgba(120, 141, 169, 0.3);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.52);
+    }
+
+    :root:not([data-theme="dark"]) .item.rank-3 .rank {
+      color: #4b2a12;
+      background: rgba(228, 184, 138, 0.92);
+      box-shadow: inset 0 0 0 1px rgba(148, 89, 41, 0.55), 0 3px 10px rgba(170, 99, 44, 0.28);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    .medal {
+      width: 1.05rem;
+      height: 1.05rem;
+      flex: 0 0 auto;
+    }
+
+    .name {
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 760;
+    }
+    .you {
+      margin-left: 0.35rem;
+      opacity: 0.66;
+      font-size: 0.82em;
+      font-weight: 560;
+    }
+
+    .badges {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.32rem;
+      margin-left: 0.5rem;
+      flex: 0 0 auto;
+    }
+
+    .badge {
+      width: 1.05rem;
+      height: 1.05rem;
+      border-radius: 999px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid transparent;
+      cursor: default;
+    }
+
+    .badge svg {
+      width: 0.76rem;
+      height: 0.76rem;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2.1;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .badge.hint {
+      color: #6b4f07;
+      background: #f6dc72;
+      border-color: #e7c94e;
+    }
+
+    .badge.played {
+      color: #0b4a2e;
+      background: #9be7c0;
+      border-color: #6fd39f;
+    }
+
+    :root[data-theme="dark"] .badge.hint {
+      color: #fbe08c;
+      background: #6f5d24;
+      border-color: #917935;
+    }
+
+    :root[data-theme="dark"] .badge.played {
+      color: #a2f3cb;
+      background: #1f5a3e;
+      border-color: #2f7a56;
+    }
+
+    .score {
+      font-variant-numeric: tabular-nums;
+      font-weight: 860;
+      font-size: 1.02rem;
+      margin-left: 0.6rem;
+    }
+
+    .item.rank-1 .score,
+    .item.rank-2 .score,
+    .item.rank-3 .score {
+      color: inherit;
+    }
+
+    .state {
+      text-align: center;
+      color: var(--muted);
+      font-weight: 700;
+      padding: 1.9rem 1rem;
+      border: 1px dashed var(--border);
+      border: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
+      border-radius: 14px;
+      background: var(--surface-2);
+      background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+    }
+
+    @supports not (color: color-mix(in srgb, white 50%, black)) {
+      body {
+        background: var(--bg);
+      }
+
+      .shell,
+      .lb-progress,
+      .item,
+      .state {
+        background: var(--surface);
+        border-color: var(--border);
+      }
+
+      .lb-progress__bar {
+        background: linear-gradient(90deg, #6aaa64, #5b9956);
+      }
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes lbBarSlide {
+      0% { transform: translateX(-110%); }
+      100% { transform: translateX(220%); }
+    }
+
+    @media (max-width: 620px) {
+      .btn { padding: 0.48rem 0.72rem; }
+      .score { font-size: 0.95rem; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-	<div class="page">
-		<header class="top">
-			<div class="brand">
-				<svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
-					<path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
-					<path d="M4 22h16"></path>
-					<path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
-					<path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
-					<path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
-				</svg>
-				<div>
-					<p class="kicker">Wordle Unbound</p>
-					<h1>Leaderboards</h1>
-				</div>
-			</div>
-			<a class="back-link" href="./index.html">← Back to game</a>
-		</header>
+  <div class="page">
+    <header class="top">
+      <div>
+  <p class="eyebrow">WordShift</p>
+        <div class="title-wrap">
+          <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+            <path d="M4 22h16"></path>
+            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+          </svg>
+          <h1>Leaderboard</h1>
+        </div>
+      </div>
 
-		<section class="board-shell" aria-label="Leaderboard panel">
-			<div class="tabs" role="tablist" aria-label="Leaderboard categories">
-				<button class="tab-btn active" data-tab="avg" role="tab" aria-selected="true">Avg Guesses</button>
-				<button class="tab-btn" data-tab="streak" role="tab" aria-selected="false">Winstreak</button>
-			</div>
+      <div class="top-actions">
+        <a class="btn" href="index.html">Back</a>
+      </div>
+    </header>
 
-			<div class="meta">
-				<span id="meta-label">Top 50 • Lowest average wins</span>
-				<span id="meta-count"></span>
-			</div>
+    <section class="shell" aria-label="Leaderboard list">
+      <div class="meta">
+        <span>Top 50 • Lowest average guesses</span>
+        <span id="meta-count"></span>
+      </div>
+      <div id="lb-progress" class="lb-progress" aria-hidden="true">
+        <div class="lb-progress__bar"></div>
+      </div>
+      <ul id="lb-list" class="list" aria-live="polite"></ul>
+    </section>
+  </div>
 
-			<ul id="lb-list" class="list" aria-live="polite"></ul>
-		</section>
-	</div>
+  <script>
+    (() => {
+      const supabaseUrl = "https://hcehsxnudbwjydvenlfz.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8";
+      const GUESS_SCALE = 10;
+      const launchDate = Date.UTC(2026, 3, 1);
 
-	<script>
-		(() => {
-			const supabaseUrl = "https://hcehsxnudbwjydvenlfz.supabase.co";
-			const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8";
-			const GUESS_SCALE = 10;
+      const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+      const listEl = document.getElementById("lb-list");
+      const metaCountEl = document.getElementById("meta-count");
+  const lbProgressEl = document.getElementById("lb-progress");
 
-			const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-			const listEl = document.getElementById("lb-list");
-			const metaCountEl = document.getElementById("meta-count");
-			const metaLabelEl = document.getElementById("meta-label");
-			const tabButtons = [...document.querySelectorAll(".tab-btn")];
-			const localUser = (() => {
-				try {
-					const raw = localStorage.getItem("wordle-user-data-v2");
-					if (!raw) return null;
-					return JSON.parse(raw)?.username || null;
-				} catch {
-					return null;
-				}
-			})();
+      const currentUser = (() => {
+        try {
+          const raw = localStorage.getItem("wordle-user-data-v2");
+          return raw ? JSON.parse(raw)?.username || null : null;
+        } catch {
+          return null;
+        }
+      })();
 
-			const medalSvg = {
-				0: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#a97700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`,
-				1: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#6c6f74" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`,
-				2: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#75431e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`
-			};
+      function getCurrentSolutionIndex() {
+        const now = new Date();
+        const localDateAsUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        return Math.max(0, Math.floor((localDateAsUTC - launchDate) / 86400000));
+      }
 
-			function renderState(text) {
-				listEl.innerHTML = `<li class="state">${text}</li>`;
-				metaCountEl.textContent = "";
-			}
+      const todayIndex = getCurrentSolutionIndex();
 
-			function renderRows(rows, tab) {
-				if (!rows.length) {
-					renderState("No data found yet.");
-					return;
-				}
+      const medalSvg = {
+        0: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#8a6700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`,
+        1: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#656a72" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`,
+        2: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#6f4121" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`
+      };
 
-				metaCountEl.textContent = `${rows.length} players`;
-				listEl.innerHTML = "";
+      const hintIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A6 6 0 1 0 7.5 11.5c.76.76 1.23 1.52 1.41 2.5"></path></svg>`;
+      const playedIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>`;
 
-				rows.forEach((player, i) => {
-					const li = document.createElement("li");
-					li.className = "item";
-					if (i === 0) li.classList.add("rank-1");
-					if (i === 1) li.classList.add("rank-2");
-					if (i === 2) li.classList.add("rank-3");
+      function renderState(text) {
+        listEl.innerHTML = `<li class="state">${text}</li>`;
+        metaCountEl.textContent = "";
+      }
 
-					const score = tab === "avg" ? player.avg : (player.max_winstreak ?? player.winstreak ?? 0);
-					const isYou = localUser && player.username === localUser;
+      function setLoading(active) {
+        if (!lbProgressEl) return;
+        lbProgressEl.classList.toggle("visible", Boolean(active));
+      }
 
-					li.innerHTML = `
-						<div class="item-left">
-							<span class="rank">#${i + 1}</span>
-							${medalSvg[i] || ""}
-							<span class="name">${player.username}${isYou ? `<span class="you">(Me)</span>` : ""}</span>
-						</div>
-						<div class="score">${score}</div>
-					`;
-					listEl.appendChild(li);
-				});
-			}
+      function renderRows(rows) {
+        if (!rows.length) {
+          renderState("No leaderboard data yet.");
+          return;
+        }
 
-			async function loadLeaderboard(tab) {
-				renderState("Loading leaderboard...");
-				metaLabelEl.textContent = tab === "avg" ? "Top 50 • Lowest average wins" : "Top 50 • Highest max winstreak";
+        listEl.innerHTML = "";
+        metaCountEl.textContent = `${rows.length} players`;
 
-				try {
-					let rows = [];
+        rows.forEach((player, i) => {
+          const li = document.createElement("li");
+          li.className = "item";
+          if (i === 0) li.classList.add("rank-1");
+          else if (i === 1) li.classList.add("rank-2");
+          else if (i === 2) li.classList.add("rank-3");
 
-					if (tab === "avg") {
-						const { data, error } = await supabase
-							.from("leaderboards")
-							.select("username, games_played, total_guesses")
-							.order("games_played", { ascending: false });
-						if (error) throw error;
+          const usedHintToday = Number(player.last_hint_day_index) === todayIndex;
+          const playedToday = Number(player.last_played_day_index) === todayIndex
+            || (player.saved_state && Number(player.saved_state.solutionIndex) === todayIndex && Boolean(player.saved_state.gameOver));
 
-						rows = (data || [])
-							.filter(p => p.username && p.games_played > 0)
-							.map(p => ({ ...p, avg: ((p.total_guesses / GUESS_SCALE) / p.games_played).toFixed(2) }))
-							.sort((a, b) => Number(a.avg) - Number(b.avg))
-							.slice(0, 50);
-					} else {
-						const { data, error } = await supabase
-							.from("leaderboards")
-							.select("username, winstreak, max_winstreak")
-							.order("max_winstreak", { ascending: false })
-							.limit(50);
-						if (error) throw error;
-						rows = (data || []).filter(p => p.username);
-					}
+          const badges = `
+            <span class="badges">
+              ${playedToday ? `<span class="badge played" title="Solved today's word">${playedIcon}</span>` : ""}
+              ${usedHintToday ? `<span class="badge hint" title="Used hints today">${hintIcon}</span>` : ""}
+            </span>
+          `;
 
-					renderRows(rows, tab);
-				} catch (err) {
-					console.error("Leaderboard load failed:", err);
-					renderState("Failed to load leaderboard.");
-				}
-			}
+          li.innerHTML = `
+            <div class="left">
+              <span class="rank">#${i + 1}</span>
+              ${medalSvg[i] || ""}
+              <span class="name">
+                ${player.username}
+                ${currentUser && player.username === currentUser ? `<span class="you">(Me)</span>` : ""}
+              </span>
+              ${badges}
+            </div>
+            <div class="score">${player.avg}</div>
+          `;
 
-			tabButtons.forEach((btn) => {
-				btn.addEventListener("click", () => {
-					tabButtons.forEach((b) => {
-						b.classList.remove("active");
-						b.setAttribute("aria-selected", "false");
-					});
-					btn.classList.add("active");
-					btn.setAttribute("aria-selected", "true");
-					loadLeaderboard(btn.dataset.tab);
-				});
-			});
+          listEl.appendChild(li);
+        });
+      }
 
-			loadLeaderboard("avg");
-		})();
-	</script>
+      async function loadLeaderboard() {
+        setLoading(true);
+        renderState("Loading leaderboard...");
+
+        try {
+          let data = null;
+          let error = null;
+
+          ({ data, error } = await supabase
+            .from("leaderboards")
+            .select("username, games_played, total_guesses, last_hint_day_index, last_played_day_index, saved_state")
+            .order("games_played", { ascending: false }));
+
+          if (error) {
+            ({ data, error } = await supabase
+              .from("leaderboards")
+              .select("username, games_played, total_guesses, last_hint_day_index, saved_state")
+              .order("games_played", { ascending: false }));
+          }
+
+          if (error) {
+            ({ data, error } = await supabase
+              .from("leaderboards")
+              .select("username, games_played, total_guesses, saved_state")
+              .order("games_played", { ascending: false }));
+          }
+
+          if (error) throw error;
+
+          const rows = (data || [])
+            .filter((p) => p.username && Number(p.games_played) > 0)
+            .map((p) => ({
+              ...p,
+              avg: ((Number(p.total_guesses || 0) / GUESS_SCALE) / Number(p.games_played || 1)).toFixed(2)
+            }))
+            .sort((a, b) => Number(a.avg) - Number(b.avg))
+            .slice(0, 50);
+
+          renderRows(rows);
+        } catch (err) {
+          console.error("Leaderboard load failed:", err);
+          renderState("Failed to load leaderboard.");
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      loadLeaderboard();
+    })();
+  </script>
 </body>
 </html>

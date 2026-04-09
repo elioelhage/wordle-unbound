@@ -6,7 +6,9 @@
       if (key.startsWith("wordle-")) localStorage.removeItem(key);
     });
     localStorage.setItem("wordle-version", CURRENT_VERSION);
-    window.location.reload(true);
+    const fresh = new URL(window.location.href);
+    fresh.searchParams.set("_refresh", String(Date.now()));
+    window.location.replace(fresh.toString());
     return;
   }
   // ---------------------------------------------
@@ -14,7 +16,7 @@
   // --- SUPABASE CONFIGURATION ---
   const supabaseUrl = 'https://hcehsxnudbwjydvenlfz.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8';
-  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  const supabase = window.supabase?.createClient ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 
   const WORD_SOURCE = "supabase";
   const GUESS_SCALE = 10;
@@ -44,6 +46,11 @@
   const usernameInput = document.getElementById("username-input");
   const passwordInput = document.getElementById("password-input");
   const leaderboardBtn = document.getElementById("leaderboard-button");
+  const raceLobbyBtn = document.getElementById("race-lobby-button");
+  const accountMenuButton = document.getElementById("account-menu-button");
+  const accountMenuPanel = document.getElementById("account-menu-panel");
+  const accountActionBtn = document.getElementById("account-action-btn");
+  const passafloraThemeBtn = document.getElementById("passaflora-theme-btn");
   const leaderboardModal = document.getElementById("leaderboard-modal");
   const closeLeaderboardBtn = document.getElementById("close-leaderboard");
   const leaderboardCard = document.querySelector(".leaderboard-card");
@@ -54,11 +61,27 @@
   const tabBtns = document.querySelectorAll(".tab-btn");
   const lbLoading = document.getElementById("lb-loading");
   const lbList = document.getElementById("lb-list");
+  const walkthroughModal = document.getElementById("walkthrough-modal");
+  const walkthroughCard = walkthroughModal?.querySelector(".walkthrough-card");
+  const walkthroughTitle = document.getElementById("walkthrough-title");
+  const walkthroughText = document.getElementById("walkthrough-text");
+  const walkthroughDemo = document.getElementById("walkthrough-demo");
+  const walkthroughStepIndicator = document.getElementById("walkthrough-step-indicator");
+  const walkthroughSkipBtn = document.getElementById("walkthrough-skip");
+  const walkthroughPrevBtn = document.getElementById("walkthrough-prev");
+  const walkthroughNextBtn = document.getElementById("walkthrough-next");
+  const walkthroughAccountBtn = document.getElementById("walkthrough-account");
+  const walkthroughActions = walkthroughModal?.querySelector(".walkthrough-actions");
 
   const wordCache = {};
-  const today = new Date();
-  const localDateAsUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-  const daysPassed = Math.max(0, Math.floor((localDateAsUTC - launchDate) / 86400000));
+
+  function getCurrentSolutionIndex() {
+    const now = new Date();
+    const localDateAsUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.max(0, Math.floor((localDateAsUTC - launchDate) / 86400000));
+  }
+
+  const daysPassed = getCurrentSolutionIndex();
 
   if (WORD_SOURCE !== "supabase" && daysPassed >= DAILY_WORDS.length) {
     boardEl.innerHTML = `
@@ -73,7 +96,7 @@
   }
 
   const solutionIndex = daysPassed;
-  const reminderSentKey = `wordle-reminder-sent-${solutionIndex}`;
+  const reminderSentPrefix = `wordle-reminder-sent-${solutionIndex}`;
   let solution = "";
   let wordCategory = "";
   let wordLength = 0;
@@ -81,8 +104,19 @@
   let maxHints = 2; // Will update after fetch
 
   const storageKey = `wordle-mobile-${solutionIndex}`;
+  const endModalSeenKey = `wordle-end-modal-seen-${solutionIndex}`;
   const themeKey = "wordle-mobile-theme";
   const userKey = "wordle-user-data-v2";
+  const walkthroughKey = "wordle-first-walkthrough-v1";
+  const pageParams = new URLSearchParams(window.location.search);
+  const raceLoginIntent = pageParams.get("raceLogin") === "1";
+  const raceRoomIntent = (pageParams.get("room") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+
+  if (pageParams.has("_refresh")) {
+    const clean = new URL(window.location.href);
+    clean.searchParams.delete("_refresh");
+    window.history.replaceState({}, "", clean);
+  }
 
   let currentRow = 0;
   let currentGuess = "";
@@ -95,6 +129,77 @@
   let hasSubmittedToLeaderboard = false;
   let noonReminderTimeout = null;
   let noonReminderInterval = null;
+  let afternoonReminderTimeout = null;
+  let afternoonReminderInterval = null;
+  let dayRolloverTimeout = null;
+  let hasTriggeredDayReset = false;
+  let loaderFailsafeTimer = null;
+  let walkthroughLengthTimer = null;
+  let walkthroughLengthFrame = 0;
+
+  function safeHardRefresh(delay = 220) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("_refresh", String(Date.now()));
+    window.setTimeout(() => {
+      window.location.replace(url.toString());
+    }, delay);
+  }
+
+  function armLoaderFailsafe(timeoutMs = 9000) {
+    if (loaderFailsafeTimer) clearTimeout(loaderFailsafeTimer);
+    loaderFailsafeTimer = window.setTimeout(() => {
+      hideAppLoader();
+      if (!gameOver) {
+        showMessage("Loading took too long. You can keep playing or refresh.");
+      }
+    }, timeoutMs);
+  }
+
+  function clearLoaderFailsafe() {
+    if (!loaderFailsafeTimer) return;
+    clearTimeout(loaderFailsafeTimer);
+    loaderFailsafeTimer = null;
+  }
+  let walkthroughStep = 0;
+
+  const walkthroughSteps = [
+    {
+  title: "Welcome to WordShift",
+      body: "Guess the hidden daily word by typing letters and submitting with ENTER. Every day has a fresh word.",
+      demo: "intro",
+      pulse: false
+    },
+    {
+      title: "Green and yellow feedback",
+      body: "Green means correct letter in the exact spot. Yellow means correct letter but wrong position.",
+      demo: "colors",
+      pulse: false
+    },
+    {
+      title: "Word length changes by day",
+      body: "Some days are short, some are longer. The board and allowed tries automatically adjust to today’s word length.",
+      demo: "length",
+      pulse: false
+    },
+    {
+      title: "Hints can save a run",
+      body: "Use hints when stuck. They can reveal patterns, letters, or eliminate options depending on word length.",
+      demo: "hint",
+      pulse: false
+    },
+    {
+      title: "Turn on reminders",
+      body: "Turn on reminders to do the daily WordShift.",
+      demo: "notify",
+      pulse: false
+    },
+    {
+      title: "Create an account for the full experience",
+      body: "Accounts unlock synced progress, race mode, and leaderboard placement — this is where the real competition happens.",
+      demo: "account",
+      pulse: true
+    }
+  ];
 
   function generateUUID() { return crypto.randomUUID(); }
 
@@ -110,7 +215,7 @@
   }
 
   async function fetchTodaysWord() {
-    if (WORD_SOURCE === "supabase") {
+    if (WORD_SOURCE === "supabase" && supabase) {
       try {
         const { data, error } = await supabase.from('words').select('word, category').eq('day_index', solutionIndex).single();
         if (error) throw error;
@@ -166,6 +271,8 @@
     }
   }
 
+  armLoaderFailsafe();
+
   fetchTodaysWord().then(() => {
     boardState = Array.from({ length: maxRows }, () => null);
 
@@ -189,18 +296,264 @@
     updateHintBadge();
     bindEvents();
     initializeDailyNotifications();
-    hideAppLoader();
+  scheduleDayRolloverReset();
+    if (raceLoginIntent) {
+      openAuthModal("Login to continue to Race Lobby.");
+      usernameView.classList.remove("hidden");
+      statsView.classList.add("hidden");
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("raceLogin");
+      cleanUrl.searchParams.delete("room");
+      window.history.replaceState({}, "", cleanUrl);
+    }
     
-    if (gameOver) showEndModal(Boolean(savedState?.won));
+  if (gameOver) showEndModal(inferWonFromState(savedState));
+
+    maybeShowFirstTimeWalkthrough();
+  }).catch((err) => {
+    console.error("Initialization failed:", err);
+    showMessage("Something failed to load. Please try again.");
+  }).finally(() => {
+    hideAppLoader();
   });
+
+  function setWalkthroughSeen() {
+    localStorage.setItem(walkthroughKey, "1");
+  }
+
+  function inferWonFromState(state) {
+    if (!state?.gameOver) return false;
+    if (typeof state.won === "boolean") return state.won;
+    const rows = Array.isArray(state.boardState) ? state.boardState : [];
+    return rows.some((row) => row?.guess === solution);
+  }
+
+  function clearWalkthroughLengthAnimation() {
+    if (!walkthroughLengthTimer) return;
+    clearInterval(walkthroughLengthTimer);
+    walkthroughLengthTimer = null;
+  }
+
+  function renderLengthTransitionFrame() {
+    if (!walkthroughDemo) return;
+    const frames = [
+      { word: "STARS", length: 5 },
+      { word: "GALAXY", length: 6 },
+      { word: "ROCKETS", length: 7 }
+    ];
+    const frame = frames[walkthroughLengthFrame % frames.length];
+    walkthroughLengthFrame += 1;
+
+    const chars = frame.word.split("");
+    walkthroughDemo.innerHTML = `
+      <div class="walkthrough-row walkthrough-row-length" data-length="${frame.length}">
+        ${chars.map((char) => `<span class="walkthrough-tile w-demo-letter">${char}</span>`).join("")}
+      </div>
+      <div class="walkthrough-legend">
+        <span class="walkthrough-badge neutral">Today can be ${frame.length} letters</span>
+      </div>
+    `;
+    walkthroughDemo.classList.add("length-transition");
+  }
+
+  function clearWalkthroughTransientState() {
+    clearWalkthroughLengthAnimation();
+    walkthroughDemo?.classList.remove("show-colors", "length-transition");
+  }
+
+  function renderWalkthroughDemo(step) {
+    if (!walkthroughDemo) return;
+    clearWalkthroughTransientState();
+
+    if (step.demo === "colors") {
+      walkthroughDemo.innerHTML = `
+        <div class="walkthrough-row">
+          <span class="walkthrough-tile w-demo-letter">W</span>
+          <span class="walkthrough-tile w-demo-letter">O</span>
+          <span class="walkthrough-tile w-demo-letter">R</span>
+          <span class="walkthrough-tile w-demo-letter">D</span>
+          <span class="walkthrough-tile w-demo-letter">S</span>
+        </div>
+        <div class="walkthrough-legend">
+          <span class="walkthrough-badge correct">Green = right spot</span>
+          <span class="walkthrough-badge present">Yellow = right letter, wrong spot</span>
+        </div>
+      `;
+      walkthroughDemo.classList.add("show-colors");
+      return;
+    }
+
+    if (step.demo === "length") {
+      walkthroughLengthFrame = 0;
+      renderLengthTransitionFrame();
+      walkthroughLengthTimer = window.setInterval(renderLengthTransitionFrame, 1000);
+      return;
+    }
+
+    if (step.demo === "hint") {
+      walkthroughDemo.innerHTML = `
+        <div class="walkthrough-hint-showcase">
+          <button class="icon-button hint-button walkthrough-hint-focus" type="button" aria-label="Hint example" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 18h6"></path>
+              <path d="M10 22h4"></path>
+              <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A6 6 0 1 0 7.5 11.5c.76.76 1.23 1.52 1.41 2.5"></path>
+            </svg>
+            <span class="hint-badge">2</span>
+          </button>
+        </div>
+        <div class="walkthrough-legend">
+          <span class="walkthrough-badge neutral">Tap the lightbulb button for help when you’re stuck.</span>
+        </div>
+      `;
+      return;
+    }
+
+    if (step.demo === "notify") {
+      const permission = ("Notification" in window) ? Notification.permission : "unsupported";
+      const statusText = permission === "granted"
+        ? "Notifications are enabled. You’re set."
+        : permission === "denied"
+          ? "Notifications are blocked in this browser."
+          : permission === "unsupported"
+            ? "This browser doesn’t support notifications."
+            : "Enable notifications to get reminder pings.";
+
+      const canEnable = permission === "default";
+      walkthroughDemo.innerHTML = `
+        <div class="walkthrough-notify-showcase">
+          <button id="walkthrough-enable-notifications" class="primary-button walkthrough-notify-btn" type="button" ${canEnable ? "" : "disabled"}>${canEnable ? "Allow notifications" : "Notifications status"}</button>
+        </div>
+        <div class="walkthrough-legend">
+          <span class="walkthrough-badge neutral">${statusText}</span>
+        </div>
+      `;
+      return;
+    }
+
+    if (step.demo === "account") {
+      walkthroughDemo.innerHTML = `
+        <div class="walkthrough-row">
+          <span class="walkthrough-tile w-demo-letter">R</span>
+          <span class="walkthrough-tile w-demo-letter">A</span>
+          <span class="walkthrough-tile w-demo-letter">C</span>
+          <span class="walkthrough-tile w-demo-letter">E</span>
+          <span class="walkthrough-tile w-demo-letter">S</span>
+        </div>
+        <div class="walkthrough-legend">
+          <span class="walkthrough-badge neutral">Play without an account, or sign in to join leaderboards and race mode.</span>
+        </div>
+      `;
+      return;
+    }
+
+    walkthroughDemo.innerHTML = `
+      <div class="walkthrough-row">
+        <span class="walkthrough-tile w-demo-letter">W</span>
+        <span class="walkthrough-tile w-demo-letter">O</span>
+        <span class="walkthrough-tile w-demo-letter">R</span>
+        <span class="walkthrough-tile w-demo-letter">D</span>
+        <span class="walkthrough-tile w-demo-letter">L</span>
+        <span class="walkthrough-tile w-demo-letter">E</span>
+      </div>
+      <div class="walkthrough-legend">
+        <span class="walkthrough-badge neutral">One fresh puzzle every day.</span>
+      </div>
+    `;
+  }
+
+  function closeWalkthrough(markSeen = true) {
+    if (markSeen) setWalkthroughSeen();
+    clearWalkthroughTransientState();
+    walkthroughModal?.classList.add("hidden");
+  }
+
+  function renderWalkthroughStep() {
+    if (!walkthroughModal) return;
+    const step = walkthroughSteps[walkthroughStep] || walkthroughSteps[0];
+    walkthroughTitle.textContent = step.title;
+    walkthroughText.textContent = step.body;
+    walkthroughStepIndicator.textContent = `${walkthroughStep + 1} / ${walkthroughSteps.length}`;
+    renderWalkthroughDemo(step);
+    walkthroughCard?.classList.toggle("pulse-account", Boolean(step.pulse));
+    const isLastStep = walkthroughStep === walkthroughSteps.length - 1;
+    const hideSkip = walkthroughStep >= 3;
+    walkthroughActions?.classList.toggle("skip-collapsed", hideSkip);
+    walkthroughActions?.classList.toggle("final-step-actions", isLastStep);
+    walkthroughSkipBtn?.classList.toggle("hidden", hideSkip);
+    walkthroughPrevBtn.disabled = walkthroughStep === 0;
+    walkthroughNextBtn.textContent = isLastStep ? "Play without account" : "Next";
+    if (walkthroughAccountBtn) walkthroughAccountBtn.textContent = "Play with account";
+    walkthroughAccountBtn?.classList.toggle("hidden", !isLastStep);
+    walkthroughAccountBtn?.classList.toggle("account-cta-primary", isLastStep);
+    walkthroughNextBtn?.classList.toggle("walkthrough-next-secondary", isLastStep);
+  }
+
+  function openWalkthrough() {
+    walkthroughStep = 0;
+    renderWalkthroughStep();
+    walkthroughModal?.classList.remove("hidden");
+  }
+
+  function maybeShowFirstTimeWalkthrough() {
+    const userData = getUserData();
+    const seen = localStorage.getItem(walkthroughKey) === "1";
+    if (seen) return false;
+    if (userData?.username) return false;
+    if (raceLoginIntent) return false;
+    openWalkthrough();
+    return true;
+  }
 
   function hideAppLoader() {
     if (!appLoader) return;
+    clearLoaderFailsafe();
     // Small delay so the transition feels intentional and smooth.
     window.setTimeout(() => {
       appLoader.classList.add("is-hidden");
-      window.setTimeout(() => appLoader.remove(), 500);
     }, 180);
+  }
+
+  function showAppLoader(text = "Loading WordShift…") {
+    if (!appLoader) return;
+    const loaderText = appLoader.querySelector(".loader-text");
+    if (loaderText) loaderText.textContent = text;
+    appLoader.classList.remove("is-hidden");
+  }
+
+  function triggerDayReset() {
+    if (hasTriggeredDayReset) return;
+    hasTriggeredDayReset = true;
+
+    gameOver = true;
+    isSubmitting = true;
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
+
+    showAppLoader("Loading next puzzle…");
+    safeHardRefresh(220);
+  }
+
+  function msUntilNextWordChange() {
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 0, 0);
+    return Math.max(0, nextMidnight.getTime() - now.getTime());
+  }
+
+  function scheduleDayRolloverReset() {
+    if (dayRolloverTimeout) clearTimeout(dayRolloverTimeout);
+
+    dayRolloverTimeout = window.setTimeout(() => {
+      if (getCurrentSolutionIndex() !== solutionIndex) {
+        triggerDayReset();
+        return;
+      }
+
+      scheduleDayRolloverReset();
+    }, msUntilNextWordChange() + 150);
   }
 
   function setMetaText() {
@@ -219,13 +572,24 @@
       setTheme(nextTheme);
       localStorage.setItem(themeKey, nextTheme);
     });
+
+    passafloraThemeBtn?.addEventListener("click", () => {
+      setTheme("passaflora");
+      localStorage.setItem(themeKey, "passaflora");
+      accountMenuPanel?.classList.add("hidden");
+      accountMenuButton?.setAttribute("aria-expanded", "false");
+      showMessage("Passaflora theme on.");
+    });
   }
 
   function setTheme(theme) {
+    document.documentElement.dataset.theme = theme;
     document.body.dataset.theme = theme;
-    themeToggle.setAttribute("aria-label", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
-    themeIcon.innerHTML = theme === "dark" ? sunIcon() : moonIcon();
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#121213" : "#ffffff");
+    const isDark = theme === "dark";
+    themeToggle.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
+    themeIcon.innerHTML = isDark ? sunIcon() : moonIcon();
+    const themeColor = isDark ? "#121213" : (theme === "passaflora" ? "#eaf9ef" : "#ffffff");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
   }
 
   function moonIcon() { return `<path d="M20 13.2A7.8 7.8 0 0 1 10.8 4a8.8 8.8 0 1 0 9.2 9.2Z"></path>`; }
@@ -294,15 +658,104 @@
   }
 
   function bindEvents() {
-    const logoutBtn = document.getElementById("leaderboard-logout-button");
-    if (logoutBtn) logoutBtn.addEventListener("click", logoutLeaderboardAccount);
     closeModal.addEventListener("click", hideEndModal);
 
     // Initialize global tooltip portal (so tooltips are not clipped by modal/tab overflow)
     initGlobalTooltips();
 
-    leaderboardBtn.addEventListener("click", openLeaderboard);
-    closeLeaderboardBtn.addEventListener("click", () => leaderboardModal.classList.add("hidden"));
+    leaderboardBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      document.body.classList.add("page-transition-out");
+      window.setTimeout(() => {
+        window.location.href = "leaderboard.html";
+      }, 200);
+    });
+
+    accountMenuButton?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isHidden = accountMenuPanel.classList.contains("hidden");
+      accountMenuPanel.classList.toggle("hidden", !isHidden);
+      accountMenuButton.setAttribute("aria-expanded", String(isHidden));
+      refreshAccountMenuAction();
+    });
+
+    accountActionBtn?.addEventListener("click", () => {
+      const userData = getUserData();
+      accountMenuPanel.classList.add("hidden");
+      accountMenuButton?.setAttribute("aria-expanded", "false");
+
+      if (userData?.username) {
+        logoutLeaderboardAccount();
+      } else {
+        openAuthModal("Sign in to sync your stats across devices.");
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!accountMenuPanel || !accountMenuButton) return;
+      const insideMenu = accountMenuPanel.contains(e.target);
+      const insideBtn = accountMenuButton.contains(e.target);
+      if (!insideMenu && !insideBtn) {
+        accountMenuPanel.classList.add("hidden");
+        accountMenuButton.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    if (raceLobbyBtn) {
+      raceLobbyBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const userData = getUserData();
+
+        if (!userData?.username) {
+          openAuthModal("Create or login to your account before entering Race Lobby.");
+          return;
+        }
+
+        document.body.classList.add("page-transition-out");
+        window.setTimeout(() => {
+          window.location.href = raceLobbyBtn.getAttribute("href") || "race.html";
+        }, 200);
+      });
+    }
+    closeLeaderboardBtn.addEventListener("click", () => {
+      leaderboardModal.classList.add("hidden");
+      usernameError.classList.add("hidden");
+    });
+
+    walkthroughSkipBtn?.addEventListener("click", () => {
+      closeWalkthrough(true);
+      openAuthModal("Create an account to join races and the leaderboard. You can close this anytime.");
+    });
+    walkthroughPrevBtn?.addEventListener("click", () => {
+      walkthroughStep = Math.max(0, walkthroughStep - 1);
+      renderWalkthroughStep();
+    });
+    walkthroughNextBtn?.addEventListener("click", () => {
+      if (walkthroughStep >= walkthroughSteps.length - 1) {
+        closeWalkthrough(true);
+        return;
+      }
+      walkthroughStep += 1;
+      renderWalkthroughStep();
+    });
+    walkthroughAccountBtn?.addEventListener("click", () => {
+      closeWalkthrough(true);
+  openAuthModal("Create an account for the full WordShift experience.");
+    });
+    walkthroughDemo?.addEventListener("click", async (e) => {
+      const target = e.target.closest("#walkthrough-enable-notifications");
+      if (!target) return;
+      const permission = await requestNotificationPermissionFromUI();
+      if (permission === "granted") {
+        showMessage("Notifications enabled.");
+      } else if (permission === "denied") {
+        showMessage("Notifications blocked in browser settings.");
+      }
+      renderWalkthroughStep();
+    });
+    walkthroughModal?.addEventListener("click", (e) => {
+      if (e.target === walkthroughModal) closeWalkthrough(true);
+    });
 
     saveUsernameBtn.addEventListener("click", async () => {
       const name = usernameInput.value.trim();
@@ -340,10 +793,11 @@
             userData.username = name;
             localStorage.setItem(userKey, JSON.stringify(userData));
 
-            if (existingUser.saved_state && existingUser.saved_state.solutionIndex === solutionIndex) {
-               localStorage.setItem(storageKey, JSON.stringify(existingUser.saved_state));
-               window.location.reload(); 
-               return;
+   if (!raceLoginIntent && existingUser.saved_state && existingUser.saved_state.solutionIndex === solutionIndex) {
+     localStorage.setItem(storageKey, JSON.stringify(existingUser.saved_state));
+     showAppLoader("Syncing your account…");
+     safeHardRefresh(220);
+     return;
             }
           } else {
             usernameError.textContent = "Username taken or wrong password.";
@@ -371,9 +825,21 @@
           localStorage.setItem(userKey, JSON.stringify(userData));
         }
 
-        usernameView.classList.add("hidden");
-        statsView.classList.remove("hidden");
-        loadLeaderboardData("avg");
+        if (raceLoginIntent) {
+          document.body.classList.add("page-transition-out");
+          const target = raceRoomIntent ? `race.html?room=${encodeURIComponent(raceRoomIntent)}` : "race.html";
+          window.setTimeout(() => {
+            window.location.href = target;
+          }, 200);
+          return;
+        }
+
+        leaderboardModal.classList.add("hidden");
+        usernameView.classList.remove("hidden");
+        statsView.classList.add("hidden");
+        usernameError.classList.add("hidden");
+        refreshAccountMenuAction();
+        showMessage("Account ready.");
       } catch (error) {
         console.error("Save error:", error);
         usernameError.textContent = "Could not save. Try again.";
@@ -384,13 +850,7 @@
       }
     });
 
-    tabBtns.forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        tabBtns.forEach(b => b.classList.remove("active"));
-        e.target.classList.add("active");
-        loadLeaderboardData(e.target.dataset.tab);
-      });
-    });
+    refreshAccountMenuAction();
   }
 
   function initializeDailyNotifications() {
@@ -401,18 +861,24 @@
     // - granted => don't ask again, just schedule reminders
     // - denied => don't ask again
     if (Notification.permission === "granted") {
-      scheduleDailyNoonReminder();
+      scheduleDailyReminders();
       return;
     }
+  }
 
-    if (Notification.permission === "default") {
-      Notification.requestPermission()
-        .then((permission) => {
-          if (permission === "granted") {
-            scheduleDailyNoonReminder();
-          }
-        })
-        .catch(() => {});
+  async function requestNotificationPermissionFromUI() {
+    if (!("Notification" in window)) return "unsupported";
+    if (Notification.permission === "granted") {
+      scheduleDailyReminders();
+      return "granted";
+    }
+    if (Notification.permission === "denied") return "denied";
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") scheduleDailyReminders();
+      return permission;
+    } catch {
+      return "default";
     }
   }
 
@@ -426,40 +892,58 @@
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   }
 
-  function maybeSendDailyReminder() {
+  function reminderSentKeyFor(slot) {
+    return `${reminderSentPrefix}-${slot}`;
+  }
+
+  function maybeSendDailyReminder(slot) {
     if (!("Notification" in window) || Notification.permission !== "granted") return;
     if (isTodaysWordDone()) return;
 
     const dayStamp = currentDayStamp();
-    if (localStorage.getItem(reminderSentKey) === dayStamp) return;
+    const reminderKey = reminderSentKeyFor(slot);
+    if (localStorage.getItem(reminderKey) === dayStamp) return;
 
-    new Notification("Time for Wordle Unbound", {
-      body: "It’s around noon — go do your Wordle!",
+  const title = "Time for WordShift";
+    const body = slot === "noon"
+  ? "It’s noon — your daily WordShift is waiting."
+  : "4 PM check-in: still time to finish today’s WordShift.";
+
+    new Notification(title, {
+      body,
       icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236aaa64'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='60' fill='white' font-family='sans-serif' font-weight='bold'>W</text></svg>"
     });
 
-    localStorage.setItem(reminderSentKey, dayStamp);
+    localStorage.setItem(reminderKey, dayStamp);
   }
 
-  function msUntilNextNoon() {
+  function msUntilNextHour(targetHour) {
     const now = new Date();
-    const nextNoon = new Date(now);
-    nextNoon.setHours(12, 0, 0, 0);
-    if (now >= nextNoon) nextNoon.setDate(nextNoon.getDate() + 1);
-    return Math.max(0, nextNoon.getTime() - now.getTime());
+    const next = new Date(now);
+    next.setHours(targetHour, 0, 0, 0);
+    if (now >= next) next.setDate(next.getDate() + 1);
+    return Math.max(0, next.getTime() - now.getTime());
   }
 
-  function scheduleDailyNoonReminder() {
+  function scheduleDailyReminders() {
     if (noonReminderTimeout) clearTimeout(noonReminderTimeout);
     if (noonReminderInterval) clearInterval(noonReminderInterval);
+    if (afternoonReminderTimeout) clearTimeout(afternoonReminderTimeout);
+    if (afternoonReminderInterval) clearInterval(afternoonReminderInterval);
 
     const now = new Date();
-    if (now.getHours() >= 12) maybeSendDailyReminder();
+    if (now.getHours() >= 12) maybeSendDailyReminder("noon");
+    if (now.getHours() >= 16) maybeSendDailyReminder("afternoon");
 
     noonReminderTimeout = window.setTimeout(() => {
-      maybeSendDailyReminder();
-      noonReminderInterval = window.setInterval(maybeSendDailyReminder, 24 * 60 * 60 * 1000);
-    }, msUntilNextNoon());
+      maybeSendDailyReminder("noon");
+      noonReminderInterval = window.setInterval(() => maybeSendDailyReminder("noon"), 24 * 60 * 60 * 1000);
+    }, msUntilNextHour(12));
+
+    afternoonReminderTimeout = window.setTimeout(() => {
+      maybeSendDailyReminder("afternoon");
+      afternoonReminderInterval = window.setInterval(() => maybeSendDailyReminder("afternoon"), 24 * 60 * 60 * 1000);
+    }, msUntilNextHour(16));
   }
 
   // Create a tooltip element appended to document.body and show/hide/position on hover
@@ -533,19 +1017,15 @@
     }, { passive: true });
   }
 
-  function openLeaderboard() {
+  function openAuthModal(promptText = "") {
     leaderboardModal.classList.remove("hidden");
-    const logoutBtn = document.getElementById("leaderboard-logout-button");
-    const userData = getUserData();
-    if (logoutBtn) logoutBtn.style.display = userData.username ? "grid" : "none";
-
-    if (!userData.username) {
-      usernameView.classList.remove("hidden");
-      statsView.classList.add("hidden");
+    usernameView.classList.remove("hidden");
+    statsView.classList.add("hidden");
+    if (promptText) {
+      usernameError.textContent = promptText;
+      usernameError.classList.remove("hidden");
     } else {
-      usernameView.classList.add("hidden");
-      statsView.classList.remove("hidden");
-      tabBtns[0].click();
+      usernameError.classList.add("hidden");
     }
   }
 
@@ -560,9 +1040,20 @@
     localStorage.setItem(userKey, JSON.stringify(freshUser));
     statsView.classList.add("hidden");
     usernameView.classList.remove("hidden");
+    refreshAccountMenuAction();
+
+    showAppLoader("Refreshing...");
+    safeHardRefresh(220);
+  }
+
+  function refreshAccountMenuAction() {
+    if (!accountActionBtn) return;
+    const userData = getUserData();
+    accountActionBtn.textContent = userData?.username ? "Log out" : "Sign in / Sign up";
   }
 
   async function loadLeaderboardData(type) {
+    const requestedType = type === "avg" ? "avg" : "avg";
     lbLoading.classList.remove("hidden");
     lbLoading.textContent = "Loading...";
     lbList.classList.add("hidden");
@@ -570,7 +1061,7 @@
 
     try {
       let data = [];
-      if (type === "avg") {
+      if (requestedType === "avg") {
         const { data: res, error } = await supabase.from('leaderboards')
           .select('username, games_played, total_guesses, total_hints, last_hint_day_index')
           .order('games_played', { ascending: false });
@@ -581,12 +1072,6 @@
             avg: ((p.total_guesses / GUESS_SCALE) / p.games_played).toFixed(2)
           })).sort((a, b) => a.avg - b.avg).slice(0, 50);
         }
-      } else if (type === "streak") {
-        const { data: res, error } = await supabase.from('leaderboards')
-          .select('username, winstreak, max_winstreak, total_hints, last_hint_day_index')
-          .order('max_winstreak', { ascending: false }).limit(50);
-        if (error) throw error;
-        if (res) data = res;
       }
 
       lbLoading.classList.add("hidden");
@@ -611,7 +1096,7 @@
         else if (index === 2) li.classList.add("rank-3");
 
         let medal = index === 0 ? medal1 : index === 1 ? medal2 : index === 2 ? medal3 : "";
-        const scoreVal = type === "avg" ? player.avg : (player.max_winstreak ?? player.winstreak ?? 0);
+  const scoreVal = player.avg;
         
         let hintBadge = "";
         if (player.last_hint_day_index === solutionIndex) {
@@ -625,7 +1110,14 @@
         let displayName = player.username + hintBadge;
         if (player.username === currentUser) displayName += " <i style='opacity: 0.6; font-weight: normal; font-size: 0.85em;'>(Me)</i>";
 
-        li.innerHTML = `<div><span class="rank">#${index + 1}</span> ${medal}${displayName}</div><div class="score">${scoreVal}</div>`;
+        li.innerHTML = `
+          <div class="lb-left">
+            <span class="rank">#${index + 1}</span>
+            ${medal}
+            <span class="lb-name">${displayName}</span>
+          </div>
+          <div class="lb-score">${scoreVal}</div>
+        `;
         lbList.appendChild(li);
       });
     } catch (e) {
@@ -872,7 +1364,7 @@
         updateUserStats(true, currentRow + 1, hintsUsed);
         saveState(true);
         showMessage("Solved.");
-        showEndModal(true);
+  showEndModal(true, true);
       } else {
         currentRow += 1;
         currentGuess = "";
@@ -881,7 +1373,7 @@
           updateUserStats(false, maxRows, hintsUsed);
           saveState(false);
           showMessage(`The word was ${solution}.`);
-          showEndModal(false);
+          showEndModal(false, true);
         } else {
           updateBoard();
           saveState();
@@ -986,8 +1478,14 @@
     }
   }
 
-  function showEndModal(won) {
-    endTitle.textContent = won ? "You got it." : `The word was ${solution}`;
+  function showEndModal(won, force = false) {
+    if (!force && localStorage.getItem(endModalSeenKey) === "1") return;
+    if (won) {
+      endTitle.innerHTML = `You got it, the word was <span class="modal-word-highlight">${solution}</span>`;
+    } else {
+      endTitle.innerHTML = `The word was <span class="modal-word-highlight">${solution}</span>`;
+    }
+    localStorage.setItem(endModalSeenKey, "1");
     modal.classList.remove("hidden");
     startCountdown();
   }
@@ -1007,7 +1505,11 @@
       const tomorrow = new Date();
       tomorrow.setHours(24, 0, 0, 0);
       const diff = tomorrow.getTime() - now.getTime();
-      if (diff <= 0) return countdownEl.textContent = "00:00:00";
+      if (diff <= 0 || getCurrentSolutionIndex() !== solutionIndex) {
+        countdownEl.textContent = "00:00:00";
+        triggerDayReset();
+        return;
+      }
       const hours = Math.floor(diff / 3600000);
       const minutes = Math.floor((diff % 3600000) / 60000);
       const seconds = Math.floor((diff % 60000) / 1000);
@@ -1077,5 +1579,10 @@
   window.addEventListener("keydown", (e) => { if (e.code === "Space" && e.target.tagName !== "INPUT") e.preventDefault(); });
   window.addEventListener("resize", () => boardEl.style.setProperty("--tile-size", computeTileSize() + "px"));
   modal.addEventListener("click", (e) => { if (e.target === modal) hideEndModal(); });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && getCurrentSolutionIndex() !== solutionIndex) {
+      triggerDayReset();
+    }
+  });
 
 })();
