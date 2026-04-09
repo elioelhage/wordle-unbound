@@ -389,7 +389,6 @@
 
       if (userData?.username) {
         logoutLeaderboardAccount();
-        showMessage("Logged out.");
       } else {
         openAuthModal("Sign in to sync your stats across devices.");
       }
@@ -685,6 +684,11 @@
     statsView.classList.add("hidden");
     usernameView.classList.remove("hidden");
     refreshAccountMenuAction();
+
+    showAppLoader("Refreshing...");
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 220);
   }
 
   function refreshAccountMenuAction() {

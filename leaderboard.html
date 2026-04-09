@@ -346,7 +346,6 @@
       </div>
 
       <div class="top-actions">
-        <button id="theme-toggle" class="btn" type="button" aria-label="Toggle theme">Theme</button>
         <a class="btn" href="index.html">Back</a>
       </div>
     </header>
@@ -370,7 +369,6 @@
       const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
       const listEl = document.getElementById("lb-list");
       const metaCountEl = document.getElementById("meta-count");
-      const themeToggle = document.getElementById("theme-toggle");
 
       const currentUser = (() => {
         try {
@@ -388,18 +386,6 @@
       }
 
       const todayIndex = getCurrentSolutionIndex();
-
-      function setTheme(theme) {
-        document.documentElement.dataset.theme = theme;
-        localStorage.setItem("wordle-mobile-theme", theme);
-        const meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute("content", theme === "dark" ? "#121213" : "#ffffff");
-      }
-
-      themeToggle?.addEventListener("click", () => {
-        const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-        setTheme(current === "dark" ? "light" : "dark");
-      });
 
       const medalSvg = {
         0: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#8a6700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`,
@@ -463,10 +449,27 @@
         renderState("Loading leaderboard...");
 
         try {
-          const { data, error } = await supabase
+          let data = null;
+          let error = null;
+
+          ({ data, error } = await supabase
             .from("leaderboards")
             .select("username, games_played, total_guesses, last_hint_day_index, last_played_day_index, saved_state")
-            .order("games_played", { ascending: false });
+            .order("games_played", { ascending: false }));
+
+          if (error) {
+            ({ data, error } = await supabase
+              .from("leaderboards")
+              .select("username, games_played, total_guesses, last_hint_day_index, saved_state")
+              .order("games_played", { ascending: false }));
+          }
+
+          if (error) {
+            ({ data, error } = await supabase
+              .from("leaderboards")
+              .select("username, games_played, total_guesses, saved_state")
+              .order("games_played", { ascending: false }));
+          }
 
           if (error) throw error;
 
