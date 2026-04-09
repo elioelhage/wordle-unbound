@@ -296,7 +296,7 @@
       window.history.replaceState({}, "", cleanUrl);
     }
     
-    if (gameOver) showEndModal(Boolean(savedState?.won));
+  if (gameOver) showEndModal(inferWonFromState(savedState));
 
     maybeShowFirstTimeWalkthrough();
   }).catch((err) => {
@@ -308,6 +308,13 @@
 
   function setWalkthroughSeen() {
     localStorage.setItem(walkthroughKey, "1");
+  }
+
+  function inferWonFromState(state) {
+    if (!state?.gameOver) return false;
+    if (typeof state.won === "boolean") return state.won;
+    const rows = Array.isArray(state.boardState) ? state.boardState : [];
+    return rows.some((row) => row?.guess === solution);
   }
 
   function clearWalkthroughLengthAnimation() {
