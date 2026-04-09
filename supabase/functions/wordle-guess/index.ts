@@ -11,6 +11,38 @@ function getMaxGuesses(wordLength: number) {
   return wordLength <= 5 ? 6 : Math.min(16, wordLength + 1);
 }
 
+function setupErrorPayload(error: any, fallbackCode: string, fallbackMessage: string) {
+  const pgCode = String(error?.code || "");
+  if (pgCode === "42P01") {
+    return {
+      status: 500,
+      body: {
+        ok: false,
+        code: "BACKEND_SETUP_REQUIRED",
+        message: "Required table is missing. Run SQL migration: 2026-04-09_secure_wordle.sql"
+      }
+    };
+  }
+  if (pgCode === "42703") {
+    return {
+      status: 500,
+      body: {
+        ok: false,
+        code: "BACKEND_SETUP_REQUIRED",
+        message: "Database schema mismatch. Re-run SQL migrations for secure daily mode."
+      }
+    };
+  }
+  return {
+    status: 500,
+    body: {
+      ok: false,
+      code: fallbackCode,
+      message: error?.message || fallbackMessage
+    }
+  };
+}
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -60,6 +92,10 @@ async function resolveWordForDay(admin: any, dayIndex: number) {
   const countRes = await admin
     .from("words")
     .select("day_index", { count: "exact", head: true });
+
+  if (countRes.error) {
+    throw new Error(countRes.error.message || "Could not count words table.");
+  }
 
   const count = Number(countRes.count) || 0;
   if (count <= 0) {
@@ -118,7 +154,12 @@ Deno.serve(async (req) => {
       .eq("session_token", sessionToken)
       .maybeSingle();
 
-    if (sessionErr || !session) {
+    if (sessionErr) {
+      const mapped = setupErrorPayload(sessionErr, "SESSION_NOT_FOUND", "Session lookup failed.");
+      return json(mapped.body, mapped.status);
+    }
+
+    if (!session) {
       return json({ ok: false, code: "SESSION_NOT_FOUND" }, 404);
     }
 
@@ -137,10 +178,15 @@ Deno.serve(async (req) => {
 
     const requestCount = currentRequests + 1;
 
-    await admin
+    const { error: bumpErr } = await admin
       .from("wordle_daily_sessions")
       .update({ request_count: requestCount, updated_at: new Date().toISOString() })
       .eq("id", session.id);
+
+    if (bumpErr) {
+      const mapped = setupErrorPayload(bumpErr, "SESSION_UPDATE_FAILED", "Could not update request count.");
+      return json(mapped.body, mapped.status);
+    }
 
     if (session.game_over) {
       return json({ ok: false, code: "RATE_LIMIT", message: "Game already finished for today." }, 429);

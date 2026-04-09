@@ -37,6 +37,38 @@ function isUuidLike(value: unknown) {
   return typeof value === "string" && /^[0-9a-fA-F-]{30,80}$/.test(value);
 }
 
+function setupErrorPayload(error: any, fallbackCode: string, fallbackMessage: string) {
+  const pgCode = String(error?.code || "");
+  if (pgCode === "42P01") {
+    return {
+      status: 500,
+      body: {
+        ok: false,
+        code: "BACKEND_SETUP_REQUIRED",
+        message: "Required table is missing. Run SQL migration: 2026-04-09_secure_wordle.sql"
+      }
+    };
+  }
+  if (pgCode === "42703") {
+    return {
+      status: 500,
+      body: {
+        ok: false,
+        code: "BACKEND_SETUP_REQUIRED",
+        message: "Database schema mismatch. Re-run SQL migrations for secure daily mode."
+      }
+    };
+  }
+  return {
+    status: 500,
+    body: {
+      ok: false,
+      code: fallbackCode,
+      message: error?.message || fallbackMessage
+    }
+  };
+}
+
 async function resolveWordForDay(admin: any, dayIndex: number) {
   const exact = await admin
     .from("words")
@@ -52,6 +84,10 @@ async function resolveWordForDay(admin: any, dayIndex: number) {
   const countRes = await admin
     .from("words")
     .select("day_index", { count: "exact", head: true });
+
+  if (countRes.error) {
+    throw new Error(countRes.error.message || "Could not count words table.");
+  }
 
   const count = Number(countRes.count) || 0;
   if (count <= 0) {
@@ -129,7 +165,8 @@ Deno.serve(async (req) => {
       .maybeSingle<SessionRow>();
 
     if (existingErr) {
-      return json({ ok: false, code: "SESSION_LOOKUP_FAILED", message: existingErr.message }, 500);
+      const mapped = setupErrorPayload(existingErr, "SESSION_LOOKUP_FAILED", "Session lookup failed.");
+      return json(mapped.body, mapped.status);
     }
 
     if (existing) {
@@ -164,7 +201,31 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertErr || !created) {
-      return json({ ok: false, code: "SESSION_CREATE_FAILED", message: insertErr?.message }, 500);
+      if (String(insertErr?.code || "") === "23505") {
+        const retry = await admin
+          .from("wordle_daily_sessions")
+          .select("session_token, guess_count, request_count, guesses, game_over, won")
+          .eq("day_index", dayIndex)
+          .eq("principal_key", principalKey)
+          .maybeSingle();
+
+        if (!retry.error && retry.data?.session_token) {
+          return json({
+            ok: true,
+            sessionToken: retry.data.session_token,
+            wordLength,
+            maxGuesses,
+            guessesUsed: Number(retry.data.guess_count) || 0,
+            requestCount: Number(retry.data.request_count) || 0,
+            gameOver: Boolean(retry.data.game_over),
+            won: Boolean(retry.data.won),
+            boardState: Array.isArray(retry.data.guesses) ? retry.data.guesses : []
+          });
+        }
+      }
+
+      const mapped = setupErrorPayload(insertErr, "SESSION_CREATE_FAILED", "Session creation failed.");
+      return json(mapped.body, mapped.status);
     }
 
     return json({
