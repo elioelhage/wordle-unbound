@@ -242,7 +242,7 @@
       border: 1px solid #eebd3b;
       color: #1f1a07;
       box-shadow: 0 14px 28px rgba(255, 195, 45, 0.34);
-      transform: scale(1.022);
+      padding: 1.04rem 1.16rem;
     }
 
     .item.rank-2 {
@@ -260,12 +260,12 @@
         linear-gradient(145deg, #ffffff 0%, #edf3fb 38%, #c9d4e4 72%, #b4c1d5 100%);
       border-color: #8194ae;
       box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.86),
-        inset 0 -1px 0 rgba(124, 142, 166, 0.45),
-        0 16px 34px rgba(118, 138, 164, 0.42);
-      outline: 2px solid rgba(120, 141, 169, 0.68);
+        inset 0 1px 0 rgba(255, 255, 255, 0.72),
+        inset 0 -1px 0 rgba(124, 142, 166, 0.28),
+        0 10px 20px rgba(118, 138, 164, 0.24);
+      outline: 1px solid rgba(120, 141, 169, 0.36);
       outline-offset: -1px;
-      transform: scale(1.014);
+      padding: 0.96rem 1.1rem;
     }
 
     :root[data-theme="dark"] .item.rank-2 {
@@ -284,7 +284,22 @@
       border: 1px solid #9f5d2a;
       color: #24160c;
       box-shadow: 0 12px 24px rgba(170, 99, 44, 0.3);
-      transform: scale(1.006);
+      padding: 0.88rem 1.02rem;
+    }
+
+    .item.rank-1 .rank,
+    .item.rank-1 .score {
+      font-size: 1.05rem;
+    }
+
+    .item.rank-2 .rank,
+    .item.rank-2 .score {
+      font-size: 1rem;
+    }
+
+    .item.rank-3 .rank,
+    .item.rank-3 .score {
+      font-size: 0.95rem;
     }
 
     .left {
