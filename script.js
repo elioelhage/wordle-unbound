@@ -341,7 +341,6 @@
   function clearWalkthroughTransientState() {
     clearWalkthroughLengthAnimation();
     walkthroughDemo?.classList.remove("show-colors", "length-transition");
-    hintButton?.classList.remove("walkthrough-hint-focus");
   }
 
   function renderWalkthroughDemo(step) {
@@ -375,18 +374,20 @@
 
     if (step.demo === "hint") {
       walkthroughDemo.innerHTML = `
-        <div class="walkthrough-row">
-          <span class="walkthrough-tile w-demo-letter">H</span>
-          <span class="walkthrough-tile w-demo-letter">I</span>
-          <span class="walkthrough-tile w-demo-letter">N</span>
-          <span class="walkthrough-tile w-demo-letter">T</span>
-          <span class="walkthrough-tile w-demo-letter">S</span>
+        <div class="walkthrough-hint-showcase">
+          <button class="icon-button hint-button walkthrough-hint-focus" type="button" aria-label="Hint example" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 18h6"></path>
+              <path d="M10 22h4"></path>
+              <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A6 6 0 1 0 7.5 11.5c.76.76 1.23 1.52 1.41 2.5"></path>
+            </svg>
+            <span class="hint-badge">2</span>
+          </button>
         </div>
         <div class="walkthrough-legend">
           <span class="walkthrough-badge neutral">Tap the lightbulb button for help when you’re stuck.</span>
         </div>
       `;
-      hintButton?.classList.add("walkthrough-hint-focus");
       return;
     }
 
@@ -439,7 +440,8 @@
     const hideSkip = walkthroughStep >= 3;
     walkthroughSkipBtn?.classList.toggle("hidden", hideSkip);
     walkthroughPrevBtn.disabled = walkthroughStep === 0;
-    walkthroughNextBtn.textContent = isLastStep ? "Start without account" : "Next";
+    walkthroughNextBtn.textContent = isLastStep ? "Play without account" : "Next";
+    if (walkthroughAccountBtn) walkthroughAccountBtn.textContent = "Play with account";
     walkthroughAccountBtn?.classList.toggle("hidden", !isLastStep);
   }
 

@@ -234,16 +234,25 @@
 
     .item.rank-2 {
       background:
-        radial-gradient(120% 100% at 0% 0%, rgba(255, 255, 255, 0.78), transparent 58%),
-        linear-gradient(140deg, #f9fafb 0%, #e1e4ea 52%, #c4cad4 100%);
-      border: 1px solid #9fa9b8;
-      color: #1f2024;
-      box-shadow: 0 12px 24px rgba(125, 134, 151, 0.34);
+        radial-gradient(130% 105% at 0% 0%, rgba(255, 255, 255, 0.9), transparent 56%),
+        linear-gradient(145deg, #ffffff 0%, #e7edf6 45%, #bcc9da 100%);
+      border: 1px solid #8fa0b7;
+      color: #101726;
+      box-shadow: 0 14px 30px rgba(111, 130, 156, 0.38);
     }
 
     :root:not([data-theme="dark"]) .item.rank-2 {
-      outline: 2px solid rgba(148, 163, 184, 0.34);
+      outline: 2px solid rgba(120, 141, 169, 0.48);
       outline-offset: -1px;
+    }
+
+    :root[data-theme="dark"] .item.rank-2 {
+      background:
+        radial-gradient(130% 105% at 0% 0%, rgba(248, 250, 252, 0.24), transparent 56%),
+        linear-gradient(145deg, #d9e2ef 0%, #9faec3 48%, #7789a3 100%);
+      border-color: #b6c2d5;
+      color: #0f172a;
+      box-shadow: 0 14px 30px rgba(146, 163, 186, 0.3);
     }
 
     .item.rank-3 {
