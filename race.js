@@ -562,42 +562,12 @@
     }
   }
 
-  async function pickDictionaryWord(blocked, length = RACE_WORD_LENGTH) {
-    const alphabet = "abcdefghijklmnopqrstuvwxyz";
-    const startChar = alphabet[Math.floor(Math.random() * alphabet.length)];
-    const pattern = startChar + "?".repeat(length - 1);
-    
-    try {
-      const response = await fetch(`https://api.datamuse.com/words?sp=${pattern}&md=f&max=300`);
-      if (!response.ok) return null;
-      const data = await response.json();
-      
-      const valid = data.filter(item => {
-        if (!item.word || item.word.length !== length) return false;
-        if (!/^[a-zA-Z]+$/.test(item.word)) return false;
-        
-        let freq = 0;
-        if (item.tags) {
-          const fTag = item.tags.find(t => t.startsWith('f:'));
-          if (fTag) freq = parseFloat(fTag.split(':')[1]);
-        }
-        // frequency > 1.0 filters out hyper-obscure vocabulary
-        return freq > 1.0;
-      });
-
-      if (valid.length === 0) return null;
-      
-      // Shuffle the results
-      valid.sort(() => Math.random() - 0.5);
-
-      for (const item of valid) {
-        const candidate = item.word.toUpperCase();
-        if (!blocked.has(candidate)) {
-          return candidate;
-        }
-      }
-    } catch {
-      return null;
+  async function pickDictionaryWord(blocked, length = RACE_WORD_LENGTH, maxAttempts = 24) {
+    for (let i = 0; i < maxAttempts; i += 1) {
+      const candidate = randomAlphaWord(length);
+      if (blocked.has(candidate)) continue;
+      const ok = await isDictionaryWordOfLength(candidate, length);
+      if (ok) return candidate;
     }
     return null;
   }

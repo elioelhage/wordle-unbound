@@ -65,15 +65,10 @@
 
     .top {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 0.8rem;
-      margin-bottom: 0.4rem;
-    }
-
-    .top-copy {
-      flex: 1 1 auto;
-      min-width: 0;
+      margin-bottom: 0.9rem;
     }
 
     .title-wrap {
@@ -106,20 +101,10 @@
       white-space: nowrap;
     }
 
-    .leaderboard-info {
-      margin: 0 0 1.2rem;
-      max-width: 100%;
-      color: var(--muted);
-      font-size: 0.88rem;
-      line-height: 1.45;
-    }
-
     .top-actions {
       display: flex;
       align-items: center;
       gap: 0.45rem;
-      flex: 0 0 auto;
-      align-self: flex-start;
     }
 
     .btn {
@@ -257,9 +242,7 @@
       border: 1px solid #eebd3b;
       color: #1f1a07;
       box-shadow: 0 14px 28px rgba(255, 195, 45, 0.34);
-      padding: 0 1.28rem;
-      min-height: 69px;
-      height: 69px;
+      padding: 1.22rem 1.28rem;
     }
 
     .item.rank-2 {
@@ -269,9 +252,8 @@
       border: 1px solid #8fa0b7;
       color: #101726;
       box-shadow: 0 14px 30px rgba(111, 130, 156, 0.38);
-      padding: 0 1.34rem;
-      min-height: 69px;
-      height: 69px;
+      padding: 1.24rem 1.34rem;
+      min-height: 4.25rem;
     }
 
     :root:not([data-theme="dark"]) .item.rank-2 {
@@ -303,9 +285,8 @@
       border: 1px solid #9f5d2a;
       color: #24160c;
       box-shadow: 0 12px 24px rgba(170, 99, 44, 0.3);
-      padding: 0 1.22rem;
-      min-height: 69px;
-      height: 69px;
+      padding: 1.1rem 1.22rem;
+      min-height: 3.85rem;
     }
 
     .item.rank-1 .rank,
@@ -325,17 +306,17 @@
 
     .item.rank-1 .name {
       font-size: 1.04rem;
-      font-weight: 760;
+      font-weight: 820;
     }
 
     .item.rank-2 .name {
       font-size: 1.04rem;
-      font-weight: 760;
+      font-weight: 800;
     }
 
     .item.rank-3 .name {
       font-size: 0.99rem;
-      font-weight: 760;
+      font-weight: 790;
     }
 
     .item.rank-2 .medal {
@@ -538,8 +519,8 @@
 <body>
   <div class="page">
     <header class="top">
-      <div class="top-copy">
-        <p class="eyebrow">WordShift</p>
+      <div>
+  <p class="eyebrow">WordShift</p>
         <div class="title-wrap">
           <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
@@ -557,8 +538,6 @@
         <a class="btn" href="index.html">Back</a>
       </div>
     </header>
-    
-    <p class="leaderboard-info">Welcome to the WordShift Leaderboard. Rankings are based on average guesses, with an activity adjustment applied only to the top three players: after 4 inactive days, a +0.15 penalty is added every 2 days; all other positions remain unaffected by decay.</p>
 
     <section class="shell" aria-label="Leaderboard list">
       <div class="meta">
@@ -578,9 +557,6 @@
       const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8";
       const GUESS_SCALE = 10;
       const launchDate = Date.UTC(2026, 3, 1);
-  const DECAY_START_AFTER_DAYS = 4;
-  const DECAY_STEP_DAYS = 2;
-  const DECAY_STEP_VALUE = 0.15;
 
       const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
       const listEl = document.getElementById("lb-list");
@@ -603,28 +579,6 @@
       }
 
       const todayIndex = getCurrentSolutionIndex();
-
-      function getLastActiveIndex(player) {
-        if (typeof player?.last_played_day_index === "number" && Number.isFinite(player.last_played_day_index)) {
-          return player.last_played_day_index;
-        }
-        if (player?.saved_state && typeof player.saved_state.solutionIndex === "number" && Number.isFinite(player.saved_state.solutionIndex)) {
-          return player.saved_state.solutionIndex;
-        }
-        return null;
-      }
-
-      function getTopThreeDecayPenalty(player) {
-        const lastActive = getLastActiveIndex(player);
-        if (lastActive === null) return 0;
-
-        const idleDays = Math.max(0, todayIndex - lastActive);
-        if (idleDays <= DECAY_START_AFTER_DAYS) return 0;
-
-        const elapsedAfterGrace = idleDays - DECAY_START_AFTER_DAYS;
-        const steps = Math.floor(elapsedAfterGrace / DECAY_STEP_DAYS);
-        return steps * DECAY_STEP_VALUE;
-      }
 
       const medalSvg = {
         0: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#8a6700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`,
@@ -722,25 +676,12 @@
             .filter((p) => p.username && Number(p.games_played) > 0)
             .map((p) => ({
               ...p,
-              rawAvg: (Number(p.total_guesses || 0) / GUESS_SCALE) / Number(p.games_played || 1)
+              avg: ((Number(p.total_guesses || 0) / GUESS_SCALE) / Number(p.games_played || 1)).toFixed(2)
             }))
-            .sort((a, b) => Number(a.rawAvg) - Number(b.rawAvg));
-
-          rows.slice(0, 3).forEach((p) => {
-            p.decayPenalty = getTopThreeDecayPenalty(p);
-          });
-
-          const rankedRows = rows
-            .map((p) => ({
-              ...p,
-              decayPenalty: Number(p.decayPenalty || 0),
-              avgValue: Number(p.rawAvg) + Number(p.decayPenalty || 0),
-              avg: (Number(p.rawAvg) + Number(p.decayPenalty || 0)).toFixed(2)
-            }))
-            .sort((a, b) => Number(a.avgValue) - Number(b.avgValue))
+            .sort((a, b) => Number(a.avg) - Number(b.avg))
             .slice(0, 50);
 
-          renderRows(rankedRows);
+          renderRows(rows);
         } catch (err) {
           console.error("Leaderboard load failed:", err);
           renderState("Failed to load leaderboard.");

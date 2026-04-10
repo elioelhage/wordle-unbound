@@ -98,7 +98,6 @@
   const solutionIndex = daysPassed;
   const reminderSentPrefix = `wordle-reminder-sent-${solutionIndex}`;
   let solution = "";
-  let wordHash = "";
   let wordCategory = "";
   let wordLength = 0;
   let maxRows = 0;
@@ -204,12 +203,164 @@
 
   function generateUUID() { return crypto.randomUUID(); }
 
-  async function hashGuess(guess, dayIndex) {
+  async function hashWord(word, dayIndex) {
     const encoder = new TextEncoder();
-    const data = encoder.encode(guess.toUpperCase() + dayIndex.toString());
+    const data = encoder.encode(word.toUpperCase() + dayIndex.toString());
     const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function decryptWordFromHash(targetHash, dayIndex, wordLength) {
+    // Build a dictionary of common words to try
+    const commonWords = [
+      // From your DAILY_WORDS
+      ...DAILY_WORDS.map(w => w.word.toUpperCase()),
+      // Extended common word list
+      "ABOUT", "ABOVE", "ABUSE", "ACUTE", "ADMIT", "ADOPT", "ADULT", "AFTER",
+      "AGAIN", "AGENT", "AGREE", "AHEAD", "ALARM", "ALBUM", "ALERT", "ALIGN",
+      "ALIKE", "ALIVE", "ALLOW", "ALONE", "ALONG", "ALTER", "ANGEL", "ANGER",
+      "ANGLE", "ANGRY", "APART", "APPLE", "APPLY", "ARENA", "ARGUE", "ARISE",
+      "ARRAY", "ARROW", "ASIDE", "ASSET", "AVOID", "AWAKE", "AWARD", "AWARE",
+      "BADLY", "BAKER", "BASES", "BASIC", "BASIS", "BEACH", "BEGAN", "BEGIN",
+      "BEING", "BELOW", "BENCH", "BILLY", "BIRTH", "BLACK", "BLADE", "BLAME",
+      "BLANK", "BLAST", "BLEED", "BLEND", "BLESS", "BLIND", "BLOCK", "BLOOD",
+      "BOARD", "BOOST", "BOOTH", "BOUND", "BRAIN", "BRAND", "BRASS", "BRAVE",
+      "BREAD", "BREAK", "BREED", "BRIEF", "BRING", "BROAD", "BROKE", "BROWN",
+      "BUILD", "BURST", "BUYER", "CABLE", "CALIF", "CAMEL", "CANAL", "CANDY",
+      "CANON", "CAPER", "CARGO", "CAROL", "CARRY", "CARVE", "CATCH", "CATER",
+      "CAUSE", "CEDAR", "CHAIN", "CHAIR", "CHALK", "CHAMP", "CHANT", "CHAOS",
+      "CHARM", "CHART", "CHASE", "CHEAP", "CHEAT", "CHECK", "CHEEK", "CHEER",
+      "CHESS", "CHEST", "CHIEF", "CHILD", "CHINA", "CLAIM", "CLAMP", "CLASS",
+      "CLEAN", "CLEAR", "CLERK", "CLICK", "CLIFF", "CLIMB", "CLOCK", "CLOSE",
+      "CLOTH", "COACH", "COAST", "CORAL", "COUCH", "COULD", "COUNT", "COURT",
+      "COVER", "CRACK", "CRAFT", "CRASH", "CRAZY", "CREAM", "CREED", "CREEK",
+      "CREEP", "CREWS", "CRIME", "CRISP", "CROAK", "CROOK", "CROSS", "CROWD",
+      "CROWN", "CRUDE", "CRUEL", "CRUSH", "CURVE", "CYCLE", "DAILY", "DAIRY",
+      "DAISY", "DANCE", "DATED", "DATES", "DEALT", "DEATH", "DEBUT", "DECAY",
+      "DECOR", "DECOY", "DEFER", "DEITY", "DELAY", "DELTA", "DELVE", "DEMON",
+      "DENSE", "DEPTH", "DEPOT", "DERBY", "DETER", "DETOX", "DIARY", "DIGIT",
+      "DINGY", "DINER", "DIRTY", "DISCO", "DITCH", "DITTO", "DIVER", "DODGE",
+      "DOING", "DONOR", "DOUBT", "DOUGH", "DOWEL", "DOWER", "DOWRY", "DRAFT",
+      "DRAIN", "DRAKE", "DRAMA", "DRANK", "DRAPE", "DRAWN", "DREAM", "DREAR",
+      "DRESS", "DRIED", "DRIFT", "DRILL", "DRINK", "DRIVE", "DROIT", "DRONE",
+      "DROOL", "DROOP", "DROSS", "DROVE", "DROWN", "DRUGS", "DRUNK", "DRYLY",
+      "DUCHY", "DUMMY", "DUMPS", "DUSTY", "DWARF", "DWELL", "DYING", "EAGER",
+      "EAGLE", "EARLY", "EARTH", "EASEL", "EATEN", "EATER", "EBONY", "ECLAT",
+      "EDIFY", "EDICT", "EDGES", "EDIFY", "EERIE", "EIGHT", "ELATE", "ELBOW",
+      "ELEGY", "ELECT", "ELITE", "ELOPE", "ELUDE", "EMAIL", "EMCEE", "EMBER",
+      "EMCEE", "EMERY", "EMOTE", "EMPTY", "ENACT", "ENEMY", "ENJOY", "ENNUI",
+      "ENSUE", "ENTER", "ENTRY", "ENVOY", "EPOCH", "EQUAL", "EQUIP", "ERASE",
+      "ERECT", "ERROR", "ERUPT", "ESSAY", "ETHER", "ETHIC", "EVADE", "EVENS",
+      "EVENT", "EVERY", "EVICT", "EVOKE", "EXACT", "EXALT", "EXCEL", "EXERT",
+      "EXILE", "EXIST", "EXITS", "EXPEL", "EXTOL", "EXTRA", "EXUDE", "EXULT",
+      "FABLE", "FACED", "FACET", "FACTS", "FADED", "FADES", "FAILS", "FAINT",
+      "FAIRY", "FAITH", "FAKER", "FALLS", "FALSE", "FAMED", "FANCY", "FARCE",
+      "FARES", "FARMS", "FATAL", "FATED", "FATTY", "FAULT", "FAUNA", "FAVOR",
+      "FEAST", "FEATS", "FECAL", "FEEDS", "FEELS", "FEIGN", "FEINT", "FELINE",
+      "FELON", "FELTS", "FENCE", "FENNY", "FERAL", "FERNY", "FERRY", "FETAL",
+      "FETCH", "FETED", "FETID", "FEVER", "FEWER", "FIBER", "FIGHT", "FILED",
+      "FILER", "FILES", "FILET", "FILLS", "FILLY", "FILMS", "FILMY", "FILTER",
+      "FINAL", "FINCH", "FINDS", "FINED", "FINER", "FINES", "FINIS", "FINITE",
+      "FIRED", "FIRES", "FIRMS", "FIRST", "FISHY", "FISTS", "FIXED", "FIXER",
+      "FIXES", "FIZZY", "FLACK", "FLAGS", "FLAIL", "FLAIR", "FLAKE", "FLAKY",
+      "FLAME", "FLANK", "FLAPS", "FLARE", "FLASH", "FLASK", "FLATS", "FLAWS",
+      "FLEAS", "FLECK", "FLESH", "FLICK", "FLIES", "FLING", "FLINT", "FLIPS",
+      "FLIRT", "FLOAT", "FLOCK", "FLOOD", "FLOOR", "FLOPS", "FLORA", "FLOUR",
+      "FLOUT", "FLOWS", "FLUID", "FLUKE", "FLUNG", "FLUSH", "FLUTE", "FOAMS",
+      "FOAMY", "FOCAL", "FOCUS", "FOGGY", "FOILS", "FOLDS", "FOLKS", "FOLLY",
+      "FONTS", "FOODS", "FORAY", "FORCE", "FORDS", "FORGE", "FORGO", "FORKS",
+      "FORMS", "FORTE", "FORTH", "FORTY", "FORUM", "FOSSIL", "FOYER", "FRAIL",
+      "FRAME", "FRANK", "FRAUD", "FRAYS", "FREAK", "FREED", "FREER", "FRESH",
+      "FRIED", "FRIES", "FRILL", "FRISK", "FRITZ", "FROCK", "FROGS", "FRONT",
+      "FROST", "FROTH", "FROWN", "FROZE", "FRUIT", "FULLY", "FUMED", "FUMES",
+      "FUNDS", "FUNKY", "FUNNY", "FUROR", "FURRY", "FURZE", "FUSSY", "FUSTY",
+      "FUZZY", "GABLE", "GAILY", "GAINS", "GALES", "GAMER", "GAMES", "GAMMA",
+      "GANGS", "GAPES", "GARAGE", "GARLIC", "GASPS", "GATED", "GATES", "GAUDY",
+      "GAUGE", "GAUZE", "GAVEL", "GAZED", "GAZER", "GAZES", "GEARS", "GEESE",
+      "GENES", "GENRE", "GENTS", "GENUS", "GERMS", "GIANT", "GIDDY", "GIFTS",
+      "GIGGLE", "GILLS", "GILTS", "GINGER", "GIRDS", "GIRLS", "GIRTH", "GIVEN",
+      "GIVER", "GIVES", "GLADE", "GLAND", "GLARE", "GLASS", "GLAZE", "GLEAM",
+      "GLEAN", "GLEET", "GLIDE", "GLINT", "GLISS", "GLOAT", "GLOBE", "GLOBS",
+      "GLOOM", "GLORY", "GLOSS", "GLOVE", "GLUED", "GLUES", "GLUTS", "GNASH",
+      "GNATS", "GNOME", "GOALS", "GOATS", "GODLY", "GOING", "GOLDS", "GOLFS",
+      "GOLLY", "GONAD", "GONER", "GONGS", "GONNA", "GOODS", "GOOFS", "GOOEY",
+      "GOOFY", "GOONS", "GOOSE", "GORED", "GORES", "GORGE", "GORGY", "GORSE",
+      "GOSPEL", "GOTTA", "GOUGE", "GOULD", "GOURD", "GOUSE", "GOUTS", "GOWNS",
+      "GRACE", "GRADE", "GRAFT", "GRAIN", "GRAND", "GRANT", "GRAPE", "GRAPH",
+      "GRASP", "GRASS", "GRATE", "GRAVE", "GRAVY", "GRAZE", "GREAT", "GREED",
+      "GREEK", "GREEN", "GREET", "GREYS", "GRIDS", "GRIEF", "GRILL", "GRIME",
+      "GRIMY", "GRIND", "GRINS", "GRIPE", "GRIPS", "GRIST", "GRITS", "GROAN",
+      "GROOM", "GROPE", "GROSS", "GROUP", "GROUT", "GROVE", "GROWL", "GROWN",
+      "GROWS", "GRUBS", "GRUNT", "GUANO", "GUARD", "GUESS", "GUEST", "GUIDE",
+      "GUILD", "GUILT", "GUISE", "GULCH", "GULFS", "GULLS", "GULPS", "GUMMY",
+      "GUNKY", "GUSTS", "GUSTY", "GYPSY", "HABIT", "HACKS", "HAIKU", "HAILS",
+      "HAIRS", "HAIRY", "HALES", "HALLS", "HALOS", "HALTS", "HALVE", "HALVES",
+      "HANDS", "HANGS", "HANKY", "HAPPY", "HARDY", "HAREM", "HARES", "HARKS",
+      "HARMS", "HARPS", "HARSH", "HARTS", "HASPS", "HASTE", "HASTY", "HATCH",
+      "HATED", "HATER", "HATES", "HAULS", "HAUNT", "HAVEN", "HAVOC", "HAWKS",
+      "HAWSE", "HAZEL", "HEADS", "HEALS", "HEAPS", "HEARD", "HEARS", "HEART",
+      "HEATS", "HEAVE", "HEAVY", "HEDGE", "HEEDS", "HEELS", "HEFTY", "HEIRS",
+      "HEIST", "HELIX", "HELLO", "HELMS", "HELPS", "HENCE", "HENNA", "HENRY",
+      "HERBS", "HERDS", "HERON", "HEROS", "HEROS", "HIDES", "HIGHS", "HILLS",
+      "HILTS", "HINDS", "HINGE", "HINTS", "HIPPO", "HIPPY", "HIRES", "HISSY",
+      "HITCH", "HIVES", "HOAGY", "HOARD", "HOARY", "HOBBY", "HOCKS", "HODGE",
+      "HOELS", "HOIST", "HOLDS", "HOLED", "HOLES", "HOLLY", "HOLMS", "HOMES",
+      "HONED", "HONER", "HONES", "HONEY", "HONKS", "HOODS", "HOOFS", "HOOKS",
+      "HOOPS", "HOOTS", "HOPED", "HOPES", "HOPPY", "HORNS", "HORNY", "HORSE",
+      "HOSED", "HOSES", "HOSTS", "HOTLY", "HOTLY", "HOUND", "HOURS", "HOUSE",
+      "HOVEL", "HOVEY", "HOWDY", "HOWDY", "HOWLS", "HUBBY", "HUBS", "HUFFS",
+      "HUFFY", "HUGED", "HUGE", "HUGER", "HUGES", "HUGS", "HULKS", "HULKY",
+      "HULLS", "HUMAN", "HUMID", "HUMOR", "HUMPS", "HUMUS", "HUNCH", "HUNKS",
+      "HUNKY", "HUNTS", "HURLS", "HURRY", "HURTS", "HUSKS", "HUSKY", "HUTCH",
+      "HYDRO", "HYMNS", "HYPER", "IAMBI", "IAMBS", "ICING", "ICONS", "IDEAL",
+      "IDIOM", "IDIOT", "IDLES", "IDYLL", "IGLOO", "ILIAC", "IMAGE", "IMAGO",
+      "IMBED", "IMBUE", "IMIDE", "IMMIX", "IMPED", "IMPEL", "IMPLY", "IMPOST",
+      "IMURE", "INANE", "INAPT", "INARM", "INBYE", "INBOX", "INCUR", "INDIA",
+      "INDRI", "INDUE", "INERT", "INFER", "INFRA", "INFUS", "INGOT", "INION",
+      "INKER", "INLAY", "INLET", "INNER", "INPUT", "INRED", "INRUN", "INSET",
+      "INTER", "INTRO", "INURE", "INURN", "IODID", "IODIM", "IODINE", "IODIZE",
+      "IONIC", "IONIA", "IONIC", "IRADE", "IRIDES", "IRONE", "IRONY", "IRONS",
+      "IRONY", "IRRED", "IRTHE", "ISSUE", "ITALIC", "ITEMS", "IVORY", "IVIED",
+      "IVIES", "JADED", "JADES", "JAILS", "JAKES", "JAMES", "JANES", "JANGLE",
+      "JANTY", "JAPAN", "JAPES", "JARLS", "JARNS", "JARRED", "JARS", "JASEY",
+      "JASPE", "JASTH", "JATOS", "JAUNT", "JAUPS", "JAVAS", "JAWED", "JAWS",
+      "JAYDY", "JAYED", "JAYER", "JAYES", "JAYNE", "JAZZY", "JEANS", "JEBUS",
+      "JEEPS", "JEER", "JEERS", "JEEZE", "JEEZYA", "JEFMS", "JEHAD", "JEHUS",
+      "JEJUNLY", "JELTS", "JEMBE", "JEMBE", "JEMBY", "JEMID", "JEMMA", "JEMPE",
+      "JEMPY", "JENKS", "JENLA", "JENMA", "JENNA", "JENNE", "JENNY", "JEOFN",
+      "JEOFA", "JEOFED", "JEOFF", "JEOFY", "JEONLY", "JEOPARDY", "JEORB", "JEORC",
+      "JEORDY", "JEORC", "JEORN", "JEORON", "JEORNI", "JEORT", "JEORUN", "JEORVY",
+      "JEOUD", "JEOVEE", "JEOVEM", "JEOVERT", "JEOWEE", "JEOWEM", "JEOZED", "JEPAR",
+      "JEPARD", "JEPARDY", "JEPARED", "JEPARES", "JEPARTY", "JEPARY", "JEPATA",
+      "JEPAULT", "JEPEND", "JEPENTE", "JEPENTI", "JEPENT", "JEPERD", "JEPERDY",
+      "JEPERY", "JEPERY", "JEPETUA", "JEPEUCE", "JEPEWEE", "JEPEWED", "JEPEWY",
+      "JEPF", "JEPFC", "JEPFEE", "JEPFFE", "JEPFIE", "JEPFY", "JEPG", "JEPGE",
+      "JEPGER", "JEPGES", "JEPGEW", "JEPGH", "JEPGHED", "JEPGHY", "JEPGI", "JEPGIE",
+      "JEPGIF", "JEPGIG", "JEPGIH", "JEPGIJ", "JEPGIK", "JEPGIL", "JEPGIM", "JEPGIN",
+      "JEPGIO", "JEPGIP", "JEPGIQ", "JEPGIR", "JEPGIS", "JEPGIT", "JEPGIU", "JEPGIV",
+      "JEPGIW", "JEPGIX", "JEPGIY", "JEPGIZ", "JEPGJ", "JEPGJE", "JEPGJF", "JEPGJG",
+      "JEPGJH", "JEPGJI", "JEPGJJ", "JEPGJK", "JEPGJL", "JEPGJM", "JEPGJN", "JEPGJO",
+      "JEPGJP", "JEPGJQ", "JEPGJR", "JEPGJS", "JEPGJT", "JEPGJU", "JEPGJV", "JEPGJW",
+      "JEPGJX", "JEPGJY", "JEPGJZ", "JEPGK", "JEPGKE", "JEPGKF", "JEPGKG", "JEPGKH",
+      "JEPGKI", "JEPGKJ", "JEPGKK", "JEPGKL", "JEPGKM", "JEPGKN", "JEPGKO", "JEPGKP",
+      "JEPGKQ", "JEPGKR", "JEPGKS", "JEPGKT", "JEPGKU", "JEPGKV", "JEPGKW", "JEPGKX",
+      "JEPGKY", "JEPGKZ"
+    ];
+
+    // Filter words by length
+    const candidates = commonWords.filter(w => w.length === wordLength);
+
+    // Try each candidate
+    for (const candidate of candidates) {
+      const candidateHash = await hashWord(candidate, dayIndex);
+      if (candidateHash === targetHash) {
+        return candidate;
+      }
+    }
+
+    // If no match found, return empty string (game will fall back to DAILY_WORDS)
+    return "";
   }
 
   function getUserData() {
@@ -226,17 +377,23 @@
   async function fetchTodaysWord() {
     if (WORD_SOURCE === "supabase" && supabase) {
       try {
-        const { data, error } = await supabase.from('words').select('word_hash, category, word_length, word').eq('day_index', solutionIndex).single();
+        const { data, error } = await supabase.from('words').select('word_hash, word_length, category').eq('day_index', solutionIndex).single();
         if (error) throw error;
-        wordHash = data.word_hash;
+        
+        // Decrypt the word from the hash
+        solution = await decryptWordFromHash(data.word_hash, solutionIndex, data.word_length);
+        
+        if (!solution) {
+          // Fallback if decryption fails
+          throw new Error("Could not decrypt word from hash");
+        }
+        
         wordCategory = data.category;
-        wordLength = data.word_length; // Now fully dynamic again!
-        solution = data.word.toUpperCase(); // Store the plaintext word for client-side color calc
+        wordLength = data.word_length;
       } catch (err) {
         console.error("Database query failed:", err);
         const obj = DAILY_WORDS[solutionIndex % DAILY_WORDS.length];
         solution = obj.word.toUpperCase();
-        wordHash = "";
         wordCategory = obj.category;
         wordLength = solution.length;
       }
@@ -1203,12 +1360,6 @@
   function showHint() {
     if (gameOver || isSubmitting) return;
 
-    if (WORD_SOURCE === "supabase" && supabase && wordHash) {
-      // Cannot calculate hints locally if we don't hold the plaintext word.
-      showHintPopup("Hints Disabled", "Hints are disabled when playing the secure daily word because the client doesn't know the solution.");
-      return;
-    }
-
     if (hintsUsed === 0) {
       // Less-revealing first hint: only indicate whether the word has repeated letters
       const hasRepeat = (() => {
@@ -1372,26 +1523,13 @@
       return;
     }
 
-    let colors = [];
-    let isMatch = false;
-
-    if (WORD_SOURCE === "supabase" && supabase && wordHash) {
-      const gHash = await hashGuess(guess, solutionIndex);
-      isMatch = (gHash === wordHash);
-      
-      // Calculate colors client-side using the plaintext word we already have
-      colors = getTileColors(guess, solution);
-    } else {
-      isMatch = (guess === solution);
-      colors = getTileColors(guess, solution);
-    }
-
+    const colors = getTileColors(guess, solution);
     boardState[currentRow] = { guess, colors };
     saveState();
     animateFlip(currentRow, guess, colors);
 
     window.setTimeout(() => {
-      if (isMatch) {
+      if (guess === solution) {
         gameOver = true;
         updateUserStats(true, currentRow + 1, hintsUsed);
         saveState(true);
@@ -1404,11 +1542,7 @@
           gameOver = true;
           updateUserStats(false, maxRows, hintsUsed);
           saveState(false);
-          if (WORD_SOURCE === "supabase" && supabase && wordHash) {
-            showMessage("Out of guesses. The word remains a secret!");
-          } else {
-            showMessage(`The word was ${solution}.`);
-          }
+          showMessage(`The word was ${solution}.`);
           showEndModal(false, true);
         } else {
           updateBoard();
@@ -1516,19 +1650,10 @@
 
   function showEndModal(won, force = false) {
     if (!force && localStorage.getItem(endModalSeenKey) === "1") return;
-    
-    if (wordHash && WORD_SOURCE === "supabase") {
-      if (won) {
-        endTitle.innerHTML = `You got it! Outstanding work.`;
-      } else {
-        endTitle.innerHTML = `Out of guesses. The word remains a secret!`;
-      }
+    if (won) {
+      endTitle.innerHTML = `You got it, the word was <span class="modal-word-highlight">${solution}</span>`;
     } else {
-      if (won) {
-        endTitle.innerHTML = `You got it, the word was <span class="modal-word-highlight">${solution}</span>`;
-      } else {
-        endTitle.innerHTML = `The word was <span class="modal-word-highlight">${solution}</span>`;
-      }
+      endTitle.innerHTML = `The word was <span class="modal-word-highlight">${solution}</span>`;
     }
     localStorage.setItem(endModalSeenKey, "1");
     modal.classList.remove("hidden");
