@@ -735,12 +735,12 @@
       const LEADERBOARD_LOW_AVG_THRESHOLD = 3.0;
       const LEADERBOARD_LOW_AVG_MIN_GAMES = 2;
       const LEADERBOARD_CONSISTENCY_BONUS_MODE = "flat";
-      const LEADERBOARD_CONSISTENCY_BONUS_CAP = 0.15;
+      const LEADERBOARD_CONSISTENCY_BONUS_CAP = 0.30;
       const LEADERBOARD_CONSISTENCY_BONUS_TIERS = [
-        { games: 50, bonus: 0.15 },
-        { games: 21, bonus: 0.10 },
-        { games: 7, bonus: 0.06 },
-        { games: 3, bonus: 0.03 }
+        { games: 50, bonus: 0.30 },
+        { games: 21, bonus: 0.20 },
+        { games: 7, bonus: 0.10 },
+        { games: 3, bonus: 0.07 }
       ];
 
       const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);

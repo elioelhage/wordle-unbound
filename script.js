@@ -23,13 +23,13 @@
   const LEADERBOARD_LOW_AVG_THRESHOLD = 3.0;
   const LEADERBOARD_LOW_AVG_MIN_GAMES = 2;
   const LEADERBOARD_CONSISTENCY_BONUS_MODE = "flat"; // "flat" | "percent"
-  const LEADERBOARD_CONSISTENCY_BONUS_CAP = 0.15;
+  const LEADERBOARD_CONSISTENCY_BONUS_CAP = 0.30;
 
   const LEADERBOARD_CONSISTENCY_BONUS_TIERS = [
-    { games: 50, bonus: 0.15 },
-    { games: 21, bonus: 0.10 },
-    { games: 7, bonus: 0.06 },
-    { games: 3, bonus: 0.03 }
+    { games: 50, bonus: 0.30 },
+    { games: 21, bonus: 0.20 },
+    { games: 7, bonus: 0.10 },
+    { games: 3, bonus: 0.07 }
   ];
 
   const safeWords = typeof WORDS !== "undefined" ? WORDS : [
@@ -1364,11 +1364,15 @@
       }
 
       console.log("✅ Stats updated successfully - Games: " + newGamesPlayed + ", Total guesses: " + updates.total_guesses);
+      console.log("Previous bonus: " + previousBonus.toFixed(2) + ", Current bonus: " + currentBonus.toFixed(2));
 
       if (currentBonus > previousBonus) {
         const bonusReduction = (currentBonus - previousBonus).toFixed(2);
         const rewardText = `🎉 Milestone! ${newGamesPlayed} games played. Your score now benefits from a -${bonusReduction} bonus.`;
+        console.log("Showing milestone message: " + rewardText);
         window.setTimeout(() => showMessage(rewardText), 900);
+      } else {
+        console.log("No new bonus tier reached");
       }
 
       hasSubmittedToLeaderboard = true;
