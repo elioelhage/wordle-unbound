@@ -81,7 +81,11 @@
     return Math.max(0, Math.floor((localDateAsUTC - launchDate) / 86400000));
   }
 
-  const daysPassed = getCurrentSolutionIndex();
+  const FORCED_DAY_INDEX = 11;
+  const daysPassed = Number.isInteger(FORCED_DAY_INDEX)
+    ? FORCED_DAY_INDEX
+    : getCurrentSolutionIndex();
+  const isDayIndexForced = Number.isInteger(FORCED_DAY_INDEX);
 
   if (WORD_SOURCE !== "supabase" && daysPassed >= DAILY_WORDS.length) {
     boardEl.innerHTML = `
@@ -217,10 +221,18 @@
   async function fetchTodaysWord() {
     if (WORD_SOURCE === "supabase" && supabase) {
       try {
-        const { data, error } = await supabase.from('words').select('word, category').eq('day_index', solutionIndex).single();
+        const { data, error } = await supabase
+          .from('words')
+          .select('id, day_index, word, category')
+          .eq('day_index', solutionIndex)
+          .order('id', { ascending: true })
+          .limit(1)
+          .maybeSingle();
         if (error) throw error;
+        if (!data) throw new Error(`No word row found for day_index=${solutionIndex}`);
         solution = data.word.toUpperCase();
         wordCategory = data.category;
+        console.log(`[WordShift] Loaded day_index=${solutionIndex} row_day_index=${data.day_index} word=${solution}`);
       } catch (err) {
         console.error("Database query failed:", err);
         const obj = DAILY_WORDS[solutionIndex % DAILY_WORDS.length];
@@ -544,6 +556,7 @@
   }
 
   function scheduleDayRolloverReset() {
+    if (isDayIndexForced) return;
     if (dayRolloverTimeout) clearTimeout(dayRolloverTimeout);
 
     dayRolloverTimeout = window.setTimeout(() => {
@@ -1507,7 +1520,7 @@
       const diff = tomorrow.getTime() - now.getTime();
       if (diff <= 0) {
         countdownEl.textContent = "00:00:00";
-        triggerDayReset();
+        if (!isDayIndexForced) triggerDayReset();
         return;
       }
       const hours = Math.floor(diff / 3600000);
