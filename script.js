@@ -1327,12 +1327,22 @@
   async function updateUserStats(won, rawGuesses, hints) {
     if (hasSubmittedToLeaderboard) return;
     const userData = getUserData();
-    if (!userData.username) return;
+    if (!userData.username) {
+      console.log("No username in userData");
+      return;
+    }
 
     const scaledGuesses = rawGuesses * GUESS_SCALE;
     try {
       const { data: userRecord, error: fetchError } = await supabase.from('leaderboards').select('*').eq('uuid', userData.uuid).maybeSingle();
-      if (fetchError || !userRecord) return;
+      if (fetchError) {
+        console.error("Error fetching user record:", fetchError);
+        return;
+      }
+      if (!userRecord) {
+        console.error("No user record found for uuid:", userData.uuid);
+        return;
+      }
 
       const previousGamesPlayed = Number(userRecord.games_played) || 0;
       const newGamesPlayed = previousGamesPlayed + 1;
@@ -1348,7 +1358,13 @@
         last_hint_day_index: hints > 0 ? solutionIndex : userRecord.last_hint_day_index ?? null,
         last_played_day_index: solutionIndex
       };
-      await supabase.from('leaderboards').update(updates).eq('uuid', userData.uuid);
+      const { error: updateError } = await supabase.from('leaderboards').update(updates).eq('uuid', userData.uuid);
+      if (updateError) {
+        console.error("Error updating stats in DB:", updateError);
+        return;
+      }
+
+      console.log("✅ Stats updated successfully - Games: " + newGamesPlayed + ", Total guesses: " + updates.total_guesses);
 
       if (currentBonus > previousBonus) {
         const isNewTier = currentBonus > previousBonus;
