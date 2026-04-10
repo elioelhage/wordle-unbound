@@ -22,14 +22,14 @@
   const GUESS_SCALE = 10;
   const LEADERBOARD_LOW_AVG_THRESHOLD = 3.0;
   const LEADERBOARD_LOW_AVG_MIN_GAMES = 2;
-  const LEADERBOARD_STREAK_BONUS_MODE = "flat"; // "flat" | "percent"
-  const LEADERBOARD_STREAK_BONUS_CAP = 0.15;
+  const LEADERBOARD_CONSISTENCY_BONUS_MODE = "flat"; // "flat" | "percent"
+  const LEADERBOARD_CONSISTENCY_BONUS_CAP = 0.15;
 
-  const LEADERBOARD_STREAK_BONUS_TIERS = [
-    { streak: 50, bonus: 0.15 },
-    { streak: 21, bonus: 0.10 },
-    { streak: 7, bonus: 0.06 },
-    { streak: 3, bonus: 0.03 }
+  const LEADERBOARD_CONSISTENCY_BONUS_TIERS = [
+    { games: 50, bonus: 0.15 },
+    { games: 21, bonus: 0.10 },
+    { games: 7, bonus: 0.06 },
+    { games: 3, bonus: 0.03 }
   ];
 
   const safeWords = typeof WORDS !== "undefined" ? WORDS : [
@@ -1140,20 +1140,20 @@
     accountActionBtn.textContent = userData?.username ? "Log out" : "Sign in / Sign up";
   }
 
-  function getStreakBonus(streakValue) {
-    const streak = Number(streakValue) || 0;
-    const tier = LEADERBOARD_STREAK_BONUS_TIERS.find((t) => streak >= t.streak);
-    return Math.min(LEADERBOARD_STREAK_BONUS_CAP, tier ? tier.bonus : 0);
+  function getGamesPlayedBonus(gamesPlayedValue) {
+    const gamesPlayed = Number(gamesPlayedValue) || 0;
+    const tier = LEADERBOARD_CONSISTENCY_BONUS_TIERS.find((t) => gamesPlayed >= t.games);
+    return Math.min(LEADERBOARD_CONSISTENCY_BONUS_CAP, tier ? tier.bonus : 0);
   }
 
-  function applyConsistencyBonus(baseAvg, streakValue) {
+  function applyConsistencyBonus(baseAvg, gamesPlayedValue) {
     const avg = Number(baseAvg);
     if (!Number.isFinite(avg) || avg <= 0) return { score: avg, bonusApplied: 0 };
 
-    const bonus = getStreakBonus(streakValue);
+    const bonus = getGamesPlayedBonus(gamesPlayedValue);
     if (bonus <= 0) return { score: avg, bonusApplied: 0 };
 
-    if (LEADERBOARD_STREAK_BONUS_MODE === "percent") {
+    if (LEADERBOARD_CONSISTENCY_BONUS_MODE === "percent") {
       return {
         score: Math.max(0, avg * (1 - bonus)),
         bonusApplied: bonus
@@ -1168,7 +1168,7 @@
 
   function formatConsistencyBonus(bonusValue) {
     const bonus = Number(bonusValue) || 0;
-    if (LEADERBOARD_STREAK_BONUS_MODE === "percent") {
+    if (LEADERBOARD_CONSISTENCY_BONUS_MODE === "percent") {
       return `${Math.round(bonus * 100)}%`;
     }
     return `-${bonus.toFixed(2)}`;
@@ -1185,7 +1185,7 @@
       let data = [];
       if (requestedType === "avg") {
         const { data: res, error } = await supabase.from('leaderboards')
-          .select('username, games_played, total_guesses, total_hints, last_hint_day_index, winstreak')
+          .select('username, games_played, total_guesses, total_hints, last_hint_day_index')
           .order('games_played', { ascending: false });
         if (error) throw error;
         if (res && res.length > 0) {
@@ -1193,7 +1193,19 @@
           const ranked = res
             .map((p) => {
               const gamesPlayed = Number(p.games_played) || 0;
-              if (gamesPlayed <= 0) return null;
+
+              if (gamesPlayed <= 0) {
+                return {
+                  ...p,
+                  gamesPlayed,
+                  isUnrated: true,
+                  avgRaw: Number.POSITIVE_INFINITY,
+                  avg: "—",
+                  rankScoreRaw: Number.POSITIVE_INFINITY,
+                  rankScore: "???",
+                  consistencyBonus: 0
+                };
+              }
 
               const rawAvg = (Number(p.total_guesses) / GUESS_SCALE) / gamesPlayed;
               if (!Number.isFinite(rawAvg)) return null;
@@ -1202,6 +1214,7 @@
               if (needsExtraGame) {
                 return {
                   ...p,
+                  gamesPlayed,
                   isUnrated: true,
                   avgRaw: rawAvg,
                   avg: rawAvg.toFixed(2),
@@ -1211,15 +1224,16 @@
                 };
               }
 
-              const streakBonus = applyConsistencyBonus(rawAvg, p.winstreak);
+              const gameBonus = applyConsistencyBonus(rawAvg, gamesPlayed);
               return {
                 ...p,
+                gamesPlayed,
                 isUnrated: false,
                 avgRaw: rawAvg,
                 avg: rawAvg.toFixed(2),
-                rankScoreRaw: streakBonus.score,
-                rankScore: streakBonus.score.toFixed(2),
-                consistencyBonus: streakBonus.bonusApplied
+                rankScoreRaw: gameBonus.score,
+                rankScore: gameBonus.score.toFixed(2),
+                consistencyBonus: gameBonus.bonusApplied
               };
             })
             .filter(Boolean)
@@ -1227,7 +1241,7 @@
               if (a.isUnrated !== b.isUnrated) return a.isUnrated ? 1 : -1;
               if (a.rankScoreRaw !== b.rankScoreRaw) return a.rankScoreRaw - b.rankScoreRaw;
               if (a.avgRaw !== b.avgRaw) return a.avgRaw - b.avgRaw;
-              return (b.games_played || 0) - (a.games_played || 0);
+              return (b.gamesPlayed || 0) - (a.gamesPlayed || 0);
             })
             .map((p, i) => ({ ...p, leaderboardRank: i + 1 }));
 
@@ -1278,11 +1292,13 @@
         let displayName = player.username + hintBadge;
         if (player.username === currentUser) displayName += " <i style='opacity: 0.6; font-weight: normal; font-size: 0.85em;'>(Me)</i>";
 
-        const streakDays = Number(player.winstreak) || 0;
+        const gamesPlayed = Number(player.gamesPlayed ?? player.games_played) || 0;
         const bonusText = player.isUnrated
-          ? `<div class="lb-meta">Unrated for now • complete one more day to unlock your score</div>`
+          ? gamesPlayed <= 0
+            ? `<div class="lb-meta">Unrated • play your first game to unlock your score</div>`
+            : `<div class="lb-meta">Unrated for now • complete one more day to unlock your score</div>`
           : Number(player.consistencyBonus) > 0
-            ? `<div class="lb-meta">Avg ${player.avg} guesses • ${streakDays}-day streak active</div>`
+            ? `<div class="lb-meta">Avg ${player.avg} guesses • milestone bonus active (${gamesPlayed} games played)</div>`
             : `<div class="lb-meta">Avg ${player.avg} guesses</div>`;
 
         li.innerHTML = `
@@ -1316,32 +1332,27 @@
       const { data: userRecord, error: fetchError } = await supabase.from('leaderboards').select('*').eq('uuid', userData.uuid).maybeSingle();
       if (fetchError || !userRecord) return;
 
-      const lastPlayedFromState = userRecord.saved_state?.solutionIndex;
-      const lastPlayedFromColumn = typeof userRecord.last_played_day_index === "number" ? userRecord.last_played_day_index : null;
-      const lastPlayedDay = typeof lastPlayedFromState === "number" ? lastPlayedFromState : lastPlayedFromColumn;
-      const skippedAtLeastOneDay = typeof lastPlayedDay === "number" && (solutionIndex - lastPlayedDay) > 1;
-
-      const currentStreak = skippedAtLeastOneDay ? 0 : (userRecord.winstreak || 0);
-      const newWinstreak = won ? currentStreak + 1 : 0;
-      const previousBonus = getStreakBonus(currentStreak);
-      const currentBonus = won ? getStreakBonus(newWinstreak) : 0;
+      const previousGamesPlayed = Number(userRecord.games_played) || 0;
+      const newGamesPlayed = previousGamesPlayed + 1;
+      const previousBonus = getGamesPlayedBonus(previousGamesPlayed);
+      const currentBonus = getGamesPlayedBonus(newGamesPlayed);
 
       const updates = {
-        games_played: userRecord.games_played + 1,
+        games_played: newGamesPlayed,
         total_guesses: userRecord.total_guesses + scaledGuesses,
-        winstreak: newWinstreak,
-        max_winstreak: Math.max(newWinstreak, userRecord.max_winstreak ?? 0),
+        winstreak: userRecord.winstreak ?? 0,
+        max_winstreak: userRecord.max_winstreak ?? 0,
         total_hints: (userRecord.total_hints || 0) + hints,
         last_hint_day_index: hints > 0 ? solutionIndex : userRecord.last_hint_day_index ?? null,
         last_played_day_index: solutionIndex
       };
       await supabase.from('leaderboards').update(updates).eq('uuid', userData.uuid);
 
-      if (won && currentBonus > 0) {
+      if (currentBonus > previousBonus) {
         const isNewTier = currentBonus > previousBonus;
         const rewardText = isNewTier
-          ? `🔥 ${newWinstreak}-day streak! Consistency bonus unlocked (${formatConsistencyBonus(currentBonus)}).`
-          : `🔥 ${newWinstreak}-day streak. Consistency bonus active (${formatConsistencyBonus(currentBonus)}).`;
+          ? `🔥 Milestone reached: ${newGamesPlayed} games played. Consistency bonus unlocked (${formatConsistencyBonus(currentBonus)}).`
+          : `🔥 Milestone reached: ${newGamesPlayed} games played.`;
         window.setTimeout(() => showMessage(rewardText), 900);
       }
 

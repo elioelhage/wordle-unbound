@@ -614,16 +614,15 @@
       </div>
     </header>
     
-    <p class="leaderboard-info">Rankings are based on average guesses. Lower is better, and active streaks can give a small consistency bonus.</p>
+  <p class="leaderboard-info">Rankings are based on average guesses. Lower is better, and total games played can unlock small consistency bonuses.</p>
     <button id="rules-toggle" class="rules-toggle" type="button" aria-expanded="false" aria-controls="rules-panel">Leaderboard rules</button>
     <div id="rules-panel" class="rules-panel hidden">
       <p><strong>How this leaderboard works</strong></p>
       <ul>
         <li><strong>Main score:</strong> your average guesses per game (lower is better).</li>
         <li><strong>Unrated (???):</strong> if your average is 3.00 or better and you've only played 1 game, your score stays hidden until you play one more day.</li>
-        <li><strong>Consistency bonus:</strong> streaks can slightly improve your rank score.</li>
-        <li><strong>Streak tiers:</strong> 3-day, 7-day, 21-day, and 50-day streaks.</li>
-        <li><strong>Streak reset:</strong> skipping a day or failing a day resets your streak.</li>
+        <li><strong>Consistency bonus:</strong> total games played can slightly improve your rank score.</li>
+        <li><strong>Bonus milestones:</strong> 3, 7, 21, and 50 total games played.</li>
       </ul>
     </div>
 
@@ -647,13 +646,13 @@
       const launchDate = Date.UTC(2026, 3, 1);
       const LEADERBOARD_LOW_AVG_THRESHOLD = 3.0;
       const LEADERBOARD_LOW_AVG_MIN_GAMES = 2;
-      const LEADERBOARD_STREAK_BONUS_MODE = "flat";
-      const LEADERBOARD_STREAK_BONUS_CAP = 0.15;
-      const LEADERBOARD_STREAK_BONUS_TIERS = [
-        { streak: 50, bonus: 0.15 },
-        { streak: 21, bonus: 0.10 },
-        { streak: 7, bonus: 0.06 },
-        { streak: 3, bonus: 0.03 }
+      const LEADERBOARD_CONSISTENCY_BONUS_MODE = "flat";
+      const LEADERBOARD_CONSISTENCY_BONUS_CAP = 0.15;
+      const LEADERBOARD_CONSISTENCY_BONUS_TIERS = [
+        { games: 50, bonus: 0.15 },
+        { games: 21, bonus: 0.10 },
+        { games: 7, bonus: 0.06 },
+        { games: 3, bonus: 0.03 }
       ];
 
       const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -687,20 +686,20 @@
 
       const todayIndex = getCurrentSolutionIndex();
 
-      function getStreakBonus(streakValue) {
-        const streak = Number(streakValue) || 0;
-        const tier = LEADERBOARD_STREAK_BONUS_TIERS.find((t) => streak >= t.streak);
-        return Math.min(LEADERBOARD_STREAK_BONUS_CAP, tier ? tier.bonus : 0);
+      function getGamesPlayedBonus(gamesPlayedValue) {
+        const gamesPlayed = Number(gamesPlayedValue) || 0;
+        const tier = LEADERBOARD_CONSISTENCY_BONUS_TIERS.find((t) => gamesPlayed >= t.games);
+        return Math.min(LEADERBOARD_CONSISTENCY_BONUS_CAP, tier ? tier.bonus : 0);
       }
 
-      function applyConsistencyBonus(baseAvg, streakValue) {
+      function applyConsistencyBonus(baseAvg, gamesPlayedValue) {
         const avg = Number(baseAvg);
         if (!Number.isFinite(avg) || avg <= 0) return avg;
 
-        const bonus = getStreakBonus(streakValue);
+        const bonus = getGamesPlayedBonus(gamesPlayedValue);
         if (bonus <= 0) return avg;
 
-        if (LEADERBOARD_STREAK_BONUS_MODE === "percent") {
+        if (LEADERBOARD_CONSISTENCY_BONUS_MODE === "percent") {
           return Math.max(0, avg * (1 - bonus));
         }
 
@@ -785,13 +784,13 @@
 
           ({ data, error } = await supabase
             .from("leaderboards")
-            .select("username, games_played, total_guesses, last_hint_day_index, last_played_day_index, saved_state, winstreak")
+            .select("username, games_played, total_guesses, last_hint_day_index, last_played_day_index, saved_state")
             .order("games_played", { ascending: false }));
 
           if (error) {
             ({ data, error } = await supabase
               .from("leaderboards")
-              .select("username, games_played, total_guesses, last_hint_day_index, saved_state, winstreak")
+              .select("username, games_played, total_guesses, last_hint_day_index, saved_state")
               .order("games_played", { ascending: false }));
           }
 
@@ -805,28 +804,34 @@
           if (error) throw error;
 
           const ranked = (data || [])
-            .filter((p) => p.username && Number(p.games_played) > 0)
+            .filter((p) => p.username)
             .map((p) => ({
               ...p,
-              rawAvg: (Number(p.total_guesses || 0) / GUESS_SCALE) / Number(p.games_played || 1)
+              gamesPlayed: Number(p.games_played) || 0
             }))
             .map((p) => ({
               ...p,
-              isUnrated: p.rawAvg <= LEADERBOARD_LOW_AVG_THRESHOLD && Number(p.games_played) < LEADERBOARD_LOW_AVG_MIN_GAMES,
-              adjustedScore: applyConsistencyBonus(p.rawAvg, p.winstreak)
+              rawAvg: p.gamesPlayed > 0 ? (Number(p.total_guesses || 0) / GUESS_SCALE) / p.gamesPlayed : Number.POSITIVE_INFINITY
+            }))
+            .map((p) => ({
+              ...p,
+              isUnrated: p.gamesPlayed === 0 || (p.rawAvg <= LEADERBOARD_LOW_AVG_THRESHOLD && p.gamesPlayed < LEADERBOARD_LOW_AVG_MIN_GAMES),
+              adjustedScore: p.gamesPlayed > 0 ? applyConsistencyBonus(p.rawAvg, p.gamesPlayed) : Number.POSITIVE_INFINITY
             }))
             .sort((a, b) => {
               if (a.isUnrated !== b.isUnrated) return a.isUnrated ? 1 : -1;
               if (Number(a.adjustedScore) !== Number(b.adjustedScore)) return Number(a.adjustedScore) - Number(b.adjustedScore);
               if (Number(a.rawAvg) !== Number(b.rawAvg)) return Number(a.rawAvg) - Number(b.rawAvg);
-              return Number(b.games_played || 0) - Number(a.games_played || 0);
+              return Number(b.gamesPlayed || 0) - Number(a.gamesPlayed || 0);
             })
             .map((p, idx) => {
-              const streakDays = Number(p.winstreak) || 0;
+              const gamesPlayed = Number(p.gamesPlayed) || 0;
               const metaLine = p.isUnrated
-                ? "Unrated for now • complete one more day to unlock your score"
-                : streakDays >= 3
-                  ? `Avg ${Number(p.rawAvg).toFixed(2)} guesses • ${streakDays}-day streak active`
+                ? gamesPlayed <= 0
+                  ? "Unrated • play your first game to unlock your score"
+                  : "Unrated for now • complete one more day to unlock your score"
+                : Number(getGamesPlayedBonus(gamesPlayed)) > 0
+                  ? `Avg ${Number(p.rawAvg).toFixed(2)} guesses • milestone bonus active (${gamesPlayed} games played)`
                   : `Avg ${Number(p.rawAvg).toFixed(2)} guesses`;
 
               return {
