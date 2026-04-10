@@ -1207,10 +1207,11 @@
                 };
               }
 
+              const unscaledAvg = Number(p.total_guesses) / gamesPlayed;
               const rawAvg = (Number(p.total_guesses) / GUESS_SCALE) / gamesPlayed;
               if (!Number.isFinite(rawAvg)) return null;
 
-              const shouldBeUnrated = gamesPlayed === 1 && rawAvg <= LEADERBOARD_LOW_AVG_THRESHOLD;
+              const shouldBeUnrated = gamesPlayed === 1 && unscaledAvg <= LEADERBOARD_LOW_AVG_THRESHOLD;
               if (shouldBeUnrated) {
                 return {
                   ...p,

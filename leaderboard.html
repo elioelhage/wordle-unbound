@@ -924,15 +924,17 @@
               ...p,
               gamesPlayed: Number(p.games_played) || 0
             }))
-            .map((p) => ({
-              ...p,
-              rawAvg: p.gamesPlayed > 0 ? (Number(p.total_guesses || 0) / GUESS_SCALE) / p.gamesPlayed : Number.POSITIVE_INFINITY
-            }))
-            .map((p) => ({
-              ...p,
-              isUnrated: p.gamesPlayed === 0 || (p.gamesPlayed === 1 && p.rawAvg <= LEADERBOARD_LOW_AVG_THRESHOLD),
-              adjustedScore: p.gamesPlayed > 0 ? applyConsistencyBonus(p.rawAvg, p.gamesPlayed) : Number.POSITIVE_INFINITY
-            }))
+            .map((p) => {
+              const unscaledAvg = p.gamesPlayed > 0 ? Number(p.total_guesses || 0) / p.gamesPlayed : Number.POSITIVE_INFINITY;
+              const scaledAvg = p.gamesPlayed > 0 ? (Number(p.total_guesses || 0) / GUESS_SCALE) / p.gamesPlayed : Number.POSITIVE_INFINITY;
+              return {
+                ...p,
+                rawAvg: scaledAvg,
+                unscaledRawAvg: unscaledAvg,
+                isUnrated: p.gamesPlayed === 0 || (p.gamesPlayed === 1 && unscaledAvg <= LEADERBOARD_LOW_AVG_THRESHOLD),
+                adjustedScore: p.gamesPlayed > 0 ? applyConsistencyBonus(scaledAvg, p.gamesPlayed) : Number.POSITIVE_INFINITY
+              };
+            })
             .sort((a, b) => {
               if (a.isUnrated !== b.isUnrated) return a.isUnrated ? 1 : -1;
               if (Number(a.adjustedScore) !== Number(b.adjustedScore)) return Number(a.adjustedScore) - Number(b.adjustedScore);
