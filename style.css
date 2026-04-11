@@ -884,61 +884,6 @@ select.text-input {
   padding-right: 2.8rem;
 }
 
-.lb-subtitle {
-  margin: -0.1rem 0 0.65rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.4;
-  max-width: 52ch;
-}
-
-.lb-rules-toggle {
-  align-self: flex-start;
-  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  background: color-mix(in srgb, var(--surface-2) 65%, transparent);
-  color: var(--text);
-  border-radius: 999px;
-  padding: 0.38rem 0.76rem;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-  margin-bottom: 0.55rem;
-}
-
-.lb-rules-toggle:hover {
-  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
-}
-
-.lb-rules-panel {
-  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
-  border-radius: 12px;
-  padding: 0.68rem 0.78rem;
-  margin: 0 0 0.72rem;
-  color: var(--muted);
-  font-size: 0.82rem;
-  line-height: 1.4;
-}
-
-.lb-rules-panel p {
-  margin: 0 0 0.35rem;
-  color: var(--text);
-}
-
-.lb-rules-panel ul {
-  margin: 0;
-  padding-left: 1rem;
-}
-
-.lb-rules-panel svg {
-  display: inline;
-  width: 1em;
-  height: 1em;
-  stroke: currentColor;
-  vertical-align: -0.125em;
-  margin-right: 0.3em;
-}
-
 .tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1069,24 +1014,10 @@ select.text-input {
 }
 
 .lb-name {
-  display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 16rem;
-}
-
-.lb-name-main {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.lb-meta {
-  font-size: 0.74rem;
-  opacity: 0.74;
-  line-height: 1.2;
+  max-width: 16rem;
 }
 
 .lb-self {
@@ -1126,15 +1057,6 @@ select.text-input {
 .lb-item.rank-1 .lb-score,
 .lb-item.rank-2 .lb-score,
 .lb-item.rank-3 .lb-score { color: #1e1e1e; }
-
-.lb-item.unrated-entry {
-  border-style: dashed;
-}
-
-.lb-score.unrated {
-  letter-spacing: 0.05em;
-  opacity: 0.8;
-}
 
 /* Hint tooltip wrapper — use inline-flex and center alignment */
 .has-tooltip { position: relative; display: inline-flex; align-items: center; gap: 0.28rem; cursor: help; }

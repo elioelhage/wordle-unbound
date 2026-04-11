@@ -65,15 +65,10 @@
 
     .top {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 0.8rem;
-      margin-bottom: 0.4rem;
-    }
-
-    .top-copy {
-      flex: 1 1 auto;
-      min-width: 0;
+      margin-bottom: 0.9rem;
     }
 
     .title-wrap {
@@ -106,62 +101,10 @@
       white-space: nowrap;
     }
 
-    .leaderboard-info {
-      margin: 0 0 1.2rem;
-      max-width: 100%;
-      color: var(--muted);
-      font-size: 0.88rem;
-      line-height: 1.45;
-    }
-
-    .rules-toggle {
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      border-radius: 999px;
-      padding: 0.38rem 0.72rem;
-      font-size: 0.8rem;
-      font-weight: 760;
-      cursor: pointer;
-      margin-bottom: 0.55rem;
-    }
-
-    .rules-panel {
-      border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-      background: color-mix(in srgb, var(--surface-2) 68%, transparent);
-      border-radius: 12px;
-      padding: 0.65rem 0.8rem;
-      margin: 0 0 1.1rem;
-      color: var(--muted);
-      font-size: 0.82rem;
-      line-height: 1.4;
-    }
-
-    .rules-panel p {
-      margin: 0 0 0.34rem;
-      color: var(--text);
-    }
-
-    .rules-panel ul {
-      margin: 0;
-      padding-left: 1rem;
-    }
-
-    .rules-panel svg {
-      display: inline;
-      width: 1em;
-      height: 1em;
-      stroke: currentColor;
-      vertical-align: -0.125em;
-      margin-right: 0.3em;
-    }
-
     .top-actions {
       display: flex;
       align-items: center;
       gap: 0.45rem;
-      flex: 0 0 auto;
-      align-self: flex-start;
     }
 
     .btn {
@@ -299,9 +242,7 @@
       border: 1px solid #eebd3b;
       color: #1f1a07;
       box-shadow: 0 14px 28px rgba(255, 195, 45, 0.34);
-      padding: 0 1.28rem;
-      min-height: 69px;
-      height: 69px;
+      padding: 1.22rem 1.28rem;
     }
 
     .item.rank-2 {
@@ -311,9 +252,8 @@
       border: 1px solid #8fa0b7;
       color: #101726;
       box-shadow: 0 14px 30px rgba(111, 130, 156, 0.38);
-      padding: 0 1.34rem;
-      min-height: 69px;
-      height: 69px;
+      padding: 1.24rem 1.34rem;
+      min-height: 4.25rem;
     }
 
     :root:not([data-theme="dark"]) .item.rank-2 {
@@ -345,9 +285,8 @@
       border: 1px solid #9f5d2a;
       color: #24160c;
       box-shadow: 0 12px 24px rgba(170, 99, 44, 0.3);
-      padding: 0 1.22rem;
-      min-height: 69px;
-      height: 69px;
+      padding: 1.1rem 1.22rem;
+      min-height: 3.85rem;
     }
 
     .item.rank-1 .rank,
@@ -367,17 +306,17 @@
 
     .item.rank-1 .name {
       font-size: 1.04rem;
-      font-weight: 760;
+      font-weight: 820;
     }
 
     .item.rank-2 .name {
       font-size: 1.04rem;
-      font-weight: 760;
+      font-weight: 800;
     }
 
     .item.rank-3 .name {
       font-size: 0.99rem;
-      font-weight: 760;
+      font-weight: 790;
     }
 
     .item.rank-2 .medal {
@@ -453,92 +392,11 @@
 
     .name {
       min-width: 0;
-      font-weight: 760;
-    }
-
-    .name-main {
-      border: 0;
-      background: transparent;
-      color: inherit;
-      padding: 0;
-      margin: 0;
-      font: inherit;
-      font-weight: inherit;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      cursor: pointer;
-      text-align: left;
+      font-weight: 760;
     }
-
-    .name-main:hover {
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-
-    .name-main:focus-visible {
-      outline: 2px solid color-mix(in srgb, var(--accent) 65%, transparent);
-      outline-offset: 3px;
-      border-radius: 6px;
-    }
-
-    .player-sheet {
-      position: fixed;
-      inset: 0;
-      z-index: 999;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.55);
-      padding: 1rem;
-    }
-
-    .player-sheet.open {
-      display: flex;
-    }
-
-    .player-sheet-card {
-      width: min(94vw, 28rem);
-      border-radius: 16px;
-      border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-      background: var(--surface);
-      box-shadow: var(--shadow);
-      padding: 1rem;
-    }
-
-    .player-sheet-title {
-      margin: 0 0 0.7rem;
-      font-size: 1.05rem;
-      font-weight: 800;
-    }
-
-    .player-sheet-list {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      display: grid;
-      gap: 0.5rem;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-
-    .player-sheet-list strong {
-      color: var(--text);
-      margin-right: 0.3rem;
-    }
-
-    .player-sheet-close {
-      margin-top: 0.9rem;
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--surface-2);
-      color: var(--text);
-      padding: 0.62rem 0.7rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
     .you {
       margin-left: 0.35rem;
       opacity: 0.66;
@@ -611,15 +469,6 @@
       color: inherit;
     }
 
-    .item.unrated {
-      border-style: dashed;
-    }
-
-    .score.unrated {
-      letter-spacing: 0.06em;
-      opacity: 0.82;
-    }
-
     .state {
       text-align: center;
       color: var(--muted);
@@ -670,8 +519,8 @@
 <body>
   <div class="page">
     <header class="top">
-      <div class="top-copy">
-        <p class="eyebrow">WordShift</p>
+      <div>
+  <p class="eyebrow">WordShift</p>
         <div class="title-wrap">
           <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
@@ -689,17 +538,6 @@
         <a class="btn" href="index.html">Back</a>
       </div>
     </header>
-    
-  <p class="leaderboard-info">Rankings are based on average guesses. Lower is better, and total games played can unlock small consistency bonuses.</p>
-    <button id="rules-toggle" class="rules-toggle" type="button" aria-expanded="false" aria-controls="rules-panel">Leaderboard rules</button>
-    <div id="rules-panel" class="rules-panel hidden">
-      <p><strong>How this leaderboard works</strong></p>
-      <ul>
-        <li><strong>Main score:</strong> your average guesses per game (lower is better).</li>
-        <li><strong>Unrated (???):</strong> only appears when you start. Once your first-game average goes above 3.00, you become rated and appear on the leaderboard immediately.</li>
-        <li><strong>Consistency bonus:</strong> reach 3, 7, 21, or 50 total games to unlock small score bonuses. The more you play, the better your score gets. <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg> = played</li>
-      </ul>
-    </div>
 
     <section class="shell" aria-label="Leaderboard list">
       <div class="meta">
@@ -711,19 +549,6 @@
       </div>
       <ul id="lb-list" class="list" aria-live="polite"></ul>
     </section>
-
-    <div id="player-sheet" class="player-sheet" role="dialog" aria-modal="true" aria-labelledby="player-sheet-title">
-      <div class="player-sheet-card">
-        <h2 id="player-sheet-title" class="player-sheet-title">Player details</h2>
-        <ul class="player-sheet-list">
-          <li><strong>Name:</strong> <span id="player-sheet-name">—</span></li>
-          <li><strong>Joined:</strong> <span id="player-sheet-joined">—</span></li>
-          <li><strong>Raw avg guesses:</strong> <span id="player-sheet-avg">—</span></li>
-          <li><strong>Total games played:</strong> <span id="player-sheet-games">—</span></li>
-        </ul>
-        <button id="player-sheet-close" class="player-sheet-close" type="button">Close</button>
-      </div>
-    </div>
   </div>
 
   <script>
@@ -732,36 +557,11 @@
       const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8";
       const GUESS_SCALE = 10;
       const launchDate = Date.UTC(2026, 3, 1);
-      const LEADERBOARD_LOW_AVG_THRESHOLD = 3.0;
-      const LEADERBOARD_LOW_AVG_MIN_GAMES = 2;
-      const LEADERBOARD_CONSISTENCY_BONUS_MODE = "flat";
-      const LEADERBOARD_CONSISTENCY_BONUS_CAP = 0.30;
-      const LEADERBOARD_CONSISTENCY_BONUS_TIERS = [
-        { games: 50, bonus: 0.30 },
-        { games: 21, bonus: 0.20 },
-        { games: 7, bonus: 0.10 },
-        { games: 3, bonus: 0.07 }
-      ];
 
       const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
       const listEl = document.getElementById("lb-list");
       const metaCountEl = document.getElementById("meta-count");
-      const lbProgressEl = document.getElementById("lb-progress");
-      const rulesToggleEl = document.getElementById("rules-toggle");
-      const rulesPanelEl = document.getElementById("rules-panel");
-  const playerSheetEl = document.getElementById("player-sheet");
-  const playerSheetNameEl = document.getElementById("player-sheet-name");
-  const playerSheetJoinedEl = document.getElementById("player-sheet-joined");
-  const playerSheetAvgEl = document.getElementById("player-sheet-avg");
-  const playerSheetGamesEl = document.getElementById("player-sheet-games");
-  const playerSheetCloseEl = document.getElementById("player-sheet-close");
-
-      rulesToggleEl?.addEventListener("click", () => {
-        if (!rulesPanelEl) return;
-        const isHidden = rulesPanelEl.classList.contains("hidden");
-        rulesPanelEl.classList.toggle("hidden", !isHidden);
-        rulesToggleEl.setAttribute("aria-expanded", String(isHidden));
-      });
+  const lbProgressEl = document.getElementById("lb-progress");
 
       const currentUser = (() => {
         try {
@@ -779,51 +579,6 @@
       }
 
       const todayIndex = getCurrentSolutionIndex();
-
-      function formatJoinDate(createdAt) {
-        if (!createdAt) return "Unknown";
-        const dt = new Date(createdAt);
-        if (Number.isNaN(dt.getTime())) return "Unknown";
-        return dt.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-      }
-
-      function openPlayerSheet(player) {
-        if (!playerSheetEl) return;
-        playerSheetNameEl.textContent = player.username || "Unknown";
-        playerSheetJoinedEl.textContent = formatJoinDate(player.created_at);
-        playerSheetAvgEl.textContent = Number.isFinite(player.rawAvg) ? Number(player.rawAvg).toFixed(2) : "—";
-        playerSheetGamesEl.textContent = String(Number(player.gamesPlayed) || 0);
-        playerSheetEl.classList.add("open");
-      }
-
-      function closePlayerSheet() {
-        playerSheetEl?.classList.remove("open");
-      }
-
-      playerSheetCloseEl?.addEventListener("click", closePlayerSheet);
-      playerSheetEl?.addEventListener("click", (e) => {
-        if (e.target === playerSheetEl) closePlayerSheet();
-      });
-
-      function getGamesPlayedBonus(gamesPlayedValue) {
-        const gamesPlayed = Number(gamesPlayedValue) || 0;
-        const tier = LEADERBOARD_CONSISTENCY_BONUS_TIERS.find((t) => gamesPlayed >= t.games);
-        return Math.min(LEADERBOARD_CONSISTENCY_BONUS_CAP, tier ? tier.bonus : 0);
-      }
-
-      function applyConsistencyBonus(baseAvg, gamesPlayedValue) {
-        const avg = Number(baseAvg);
-        if (!Number.isFinite(avg) || avg <= 0) return avg;
-
-        const bonus = getGamesPlayedBonus(gamesPlayedValue);
-        if (bonus <= 0) return avg;
-
-        if (LEADERBOARD_CONSISTENCY_BONUS_MODE === "percent") {
-          return Math.max(0, avg * (1 - bonus));
-        }
-
-        return Math.max(0, avg - bonus);
-      }
 
       const medalSvg = {
         0: `<svg class="medal" viewBox="0 0 24 24" fill="none" stroke="#8a6700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`,
@@ -853,14 +608,12 @@
         listEl.innerHTML = "";
         metaCountEl.textContent = `${rows.length} players`;
 
-        rows.forEach((player) => {
+        rows.forEach((player, i) => {
           const li = document.createElement("li");
           li.className = "item";
-          const rankNumber = player.rank || 0;
-          if (rankNumber === 1) li.classList.add("rank-1");
-          else if (rankNumber === 2) li.classList.add("rank-2");
-          else if (rankNumber === 3) li.classList.add("rank-3");
-          if (player.isUnrated) li.classList.add("unrated");
+          if (i === 0) li.classList.add("rank-1");
+          else if (i === 1) li.classList.add("rank-2");
+          else if (i === 2) li.classList.add("rank-3");
 
           const usedHintToday = Number(player.last_hint_day_index) === todayIndex;
           const playedToday = Number(player.last_played_day_index) === todayIndex
@@ -875,23 +628,16 @@
 
           li.innerHTML = `
             <div class="left">
-              <span class="rank">#${rankNumber}</span>
-              ${medalSvg[rankNumber - 1] || ""}
+              <span class="rank">#${i + 1}</span>
+              ${medalSvg[i] || ""}
               <span class="name">
-                <button class="name-main" type="button">
-                  ${player.username}
-                  ${currentUser && player.username === currentUser ? `<span class="you">(Me)</span>` : ""}
-                </button>
+                ${player.username}
+                ${currentUser && player.username === currentUser ? `<span class="you">(Me)</span>` : ""}
               </span>
               ${badges}
             </div>
-            <div class="score ${player.isUnrated ? "unrated" : ""}">${player.scoreLabel}</div>
+            <div class="score">${player.avg}</div>
           `;
-
-          const nameMainBtn = li.querySelector(".name-main");
-          if (nameMainBtn) {
-            nameMainBtn.addEventListener("click", () => openPlayerSheet(player));
-          }
 
           listEl.appendChild(li);
         });
@@ -907,65 +653,35 @@
 
           ({ data, error } = await supabase
             .from("leaderboards")
-            .select("username, games_played, total_guesses, created_at, last_hint_day_index, last_played_day_index, saved_state")
+            .select("username, games_played, total_guesses, last_hint_day_index, last_played_day_index, saved_state")
             .order("games_played", { ascending: false }));
 
           if (error) {
             ({ data, error } = await supabase
               .from("leaderboards")
-              .select("username, games_played, total_guesses, created_at, last_hint_day_index, saved_state")
+              .select("username, games_played, total_guesses, last_hint_day_index, saved_state")
               .order("games_played", { ascending: false }));
           }
 
           if (error) {
             ({ data, error } = await supabase
               .from("leaderboards")
-              .select("username, games_played, total_guesses, created_at, saved_state")
+              .select("username, games_played, total_guesses, saved_state")
               .order("games_played", { ascending: false }));
           }
 
           if (error) throw error;
 
-          const ranked = (data || [])
-            .filter((p) => p.username)
+          const rows = (data || [])
+            .filter((p) => p.username && Number(p.games_played) > 0)
             .map((p) => ({
               ...p,
-              gamesPlayed: Number(p.games_played) || 0
+              avg: ((Number(p.total_guesses || 0) / GUESS_SCALE) / Number(p.games_played || 1)).toFixed(2)
             }))
-            .map((p) => {
-              const unscaledAvg = p.gamesPlayed > 0 ? Number(p.total_guesses || 0) / p.gamesPlayed : Number.POSITIVE_INFINITY;
-              const scaledAvg = p.gamesPlayed > 0 ? (Number(p.total_guesses || 0) / GUESS_SCALE) / p.gamesPlayed : Number.POSITIVE_INFINITY;
-              return {
-                ...p,
-                rawAvg: scaledAvg,
-                unscaledRawAvg: unscaledAvg,
-                isUnrated: p.gamesPlayed === 0 || (p.gamesPlayed === 1 && scaledAvg <= LEADERBOARD_LOW_AVG_THRESHOLD),
-                adjustedScore: p.gamesPlayed > 0 ? applyConsistencyBonus(scaledAvg, p.gamesPlayed) : Number.POSITIVE_INFINITY
-              };
-            })
-            .sort((a, b) => {
-              if (a.isUnrated !== b.isUnrated) return a.isUnrated ? 1 : -1;
-              if (Number(a.adjustedScore) !== Number(b.adjustedScore)) return Number(a.adjustedScore) - Number(b.adjustedScore);
-              if (Number(a.rawAvg) !== Number(b.rawAvg)) return Number(a.rawAvg) - Number(b.rawAvg);
-              return Number(b.gamesPlayed || 0) - Number(a.gamesPlayed || 0);
-            })
-            .map((p, idx) => {
-              const gamesPlayed = Number(p.gamesPlayed) || 0;
+            .sort((a, b) => Number(a.avg) - Number(b.avg))
+            .slice(0, 50);
 
-              return {
-                ...p,
-                rank: idx + 1,
-                scoreLabel: p.isUnrated ? "???" : Number(p.adjustedScore).toFixed(2)
-              };
-            });
-
-          let rankedRows = ranked.slice(0, 50);
-          if (currentUser && !rankedRows.some((p) => p.username === currentUser)) {
-            const me = ranked.find((p) => p.username === currentUser);
-            if (me) rankedRows = [...rankedRows, me];
-          }
-
-          renderRows(rankedRows);
+          renderRows(rows);
         } catch (err) {
           console.error("Leaderboard load failed:", err);
           renderState("Failed to load leaderboard.");

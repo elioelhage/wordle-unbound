@@ -20,17 +20,6 @@
 
   const WORD_SOURCE = "supabase";
   const GUESS_SCALE = 10;
-  const LEADERBOARD_LOW_AVG_THRESHOLD = 3.0;
-  const LEADERBOARD_LOW_AVG_MIN_GAMES = 2;
-  const LEADERBOARD_CONSISTENCY_BONUS_MODE = "flat"; // "flat" | "percent"
-  const LEADERBOARD_CONSISTENCY_BONUS_CAP = 0.30;
-
-  const LEADERBOARD_CONSISTENCY_BONUS_TIERS = [
-    { games: 50, bonus: 0.30 },
-    { games: 21, bonus: 0.20 },
-    { games: 7, bonus: 0.10 },
-    { games: 3, bonus: 0.07 }
-  ];
 
   const safeWords = typeof WORDS !== "undefined" ? WORDS : [
     { word: "CEDAR", category: "Lebanon" },
@@ -72,8 +61,6 @@
   const tabBtns = document.querySelectorAll(".tab-btn");
   const lbLoading = document.getElementById("lb-loading");
   const lbList = document.getElementById("lb-list");
-  const lbRulesToggle = document.getElementById("lb-rules-toggle");
-  const lbRulesPanel = document.getElementById("lb-rules-panel");
   const walkthroughModal = document.getElementById("walkthrough-modal");
   const walkthroughCard = walkthroughModal?.querySelector(".walkthrough-card");
   const walkthroughTitle = document.getElementById("walkthrough-title");
@@ -216,57 +203,6 @@
 
   function generateUUID() { return crypto.randomUUID(); }
 
-  // NOTE: User requested client-side AES decryption with provided key.
-  // Format assumption for `word_encrypted`:
-  // base64(12-byte IV || ciphertext+tag)
-  const WORDSHIFT_AES_KEY_HEX = "0f55cbb6cc1ba7a09803f99276dcec8f9a4e4bb8e833a0a9c90c176e711db892";
-
-  function hexToBytes(hex) {
-    const clean = (hex || "").trim();
-    if (!/^[0-9a-fA-F]+$/.test(clean) || clean.length % 2 !== 0) {
-      throw new Error("Invalid AES key hex format.");
-    }
-    const out = new Uint8Array(clean.length / 2);
-    for (let i = 0; i < clean.length; i += 2) {
-      out[i / 2] = parseInt(clean.slice(i, i + 2), 16);
-    }
-    return out;
-  }
-
-  function base64ToBytes(base64) {
-    const binary = atob(base64);
-    const out = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
-    return out;
-  }
-
-  async function decryptEncryptedWord(payloadBase64) {
-    if (!payloadBase64) throw new Error("Missing encrypted payload.");
-
-    const keyBytes = hexToBytes(WORDSHIFT_AES_KEY_HEX);
-    const payload = base64ToBytes(payloadBase64);
-    if (payload.length < 13) throw new Error("Encrypted payload is too short.");
-
-    const iv = payload.slice(0, 12);
-    const ciphertext = payload.slice(12);
-
-    const cryptoKey = await crypto.subtle.importKey(
-      "raw",
-      keyBytes,
-      { name: "AES-GCM" },
-      false,
-      ["decrypt"]
-    );
-
-    const plainBuffer = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv },
-      cryptoKey,
-      ciphertext
-    );
-
-    return new TextDecoder().decode(plainBuffer).trim().toUpperCase();
-  }
-
   function getUserData() {
     let data = localStorage.getItem(userKey);
     if (!data) {
@@ -281,38 +217,23 @@
   async function fetchTodaysWord() {
     if (WORD_SOURCE === "supabase" && supabase) {
       try {
-        const { data, error } = await supabase
-          .from('words')
-          .select('word_encrypted, word_length, category')
-          .eq('day_index', solutionIndex)
-          .single();
+        const { data, error } = await supabase.from('words').select('word, category').eq('day_index', solutionIndex).single();
         if (error) throw error;
-
-        solution = await decryptEncryptedWord(data.word_encrypted);
-        if (!solution) throw new Error("Decryption returned empty word.");
-
-        if (typeof data.word_length === "number" && data.word_length > 0 && solution.length !== data.word_length) {
-          throw new Error(`Decrypted word length mismatch: got ${solution.length}, expected ${data.word_length}`);
-        }
-
+        solution = data.word.toUpperCase();
         wordCategory = data.category;
-        wordLength = typeof data.word_length === "number" && data.word_length > 0
-          ? data.word_length
-          : solution.length;
       } catch (err) {
         console.error("Database query failed:", err);
         const obj = DAILY_WORDS[solutionIndex % DAILY_WORDS.length];
         solution = obj.word.toUpperCase();
         wordCategory = obj.category;
-        wordLength = solution.length;
       }
     } else {
       const obj = DAILY_WORDS[solutionIndex];
       solution = obj.word.toUpperCase();
       wordCategory = obj.category;
-      wordLength = solution.length;
     }
 
+    wordLength = solution.length;
     maxRows = wordLength <= 5 ? 6 : wordLength + 1;
     maxHints = wordLength >= 7 ? 3 : 2; // Dynamic 3rd hint for 7+ letters
 
@@ -363,9 +284,6 @@
       boardState = Array.from({ length: maxRows }, (_, i) => savedState.boardState?.[i] ?? null);
       hintsUsed = savedState.hintsUsed || 0;
       hasSubmittedToLeaderboard = savedState.hasSubmittedToLeaderboard || false;
-    } else {
-      // New day or fresh game - reset submission flag
-      hasSubmittedToLeaderboard = false;
     }
 
     setupTheme();
@@ -802,15 +720,6 @@
     closeLeaderboardBtn.addEventListener("click", () => {
       leaderboardModal.classList.add("hidden");
       usernameError.classList.add("hidden");
-      lbRulesPanel?.classList.add("hidden");
-      lbRulesToggle?.setAttribute("aria-expanded", "false");
-    });
-
-    lbRulesToggle?.addEventListener("click", () => {
-      if (!lbRulesPanel) return;
-      const isHidden = lbRulesPanel.classList.contains("hidden");
-      lbRulesPanel.classList.toggle("hidden", !isHidden);
-      lbRulesToggle.setAttribute("aria-expanded", String(isHidden));
     });
 
     walkthroughSkipBtn?.addEventListener("click", () => {
@@ -1143,40 +1052,6 @@
     accountActionBtn.textContent = userData?.username ? "Log out" : "Sign in / Sign up";
   }
 
-  function getGamesPlayedBonus(gamesPlayedValue) {
-    const gamesPlayed = Number(gamesPlayedValue) || 0;
-    const tier = LEADERBOARD_CONSISTENCY_BONUS_TIERS.find((t) => gamesPlayed >= t.games);
-    return Math.min(LEADERBOARD_CONSISTENCY_BONUS_CAP, tier ? tier.bonus : 0);
-  }
-
-  function applyConsistencyBonus(baseAvg, gamesPlayedValue) {
-    const avg = Number(baseAvg);
-    if (!Number.isFinite(avg) || avg <= 0) return { score: avg, bonusApplied: 0 };
-
-    const bonus = getGamesPlayedBonus(gamesPlayedValue);
-    if (bonus <= 0) return { score: avg, bonusApplied: 0 };
-
-    if (LEADERBOARD_CONSISTENCY_BONUS_MODE === "percent") {
-      return {
-        score: Math.max(0, avg * (1 - bonus)),
-        bonusApplied: bonus
-      };
-    }
-
-    return {
-      score: Math.max(0, avg - bonus),
-      bonusApplied: bonus
-    };
-  }
-
-  function formatConsistencyBonus(bonusValue) {
-    const bonus = Number(bonusValue) || 0;
-    if (LEADERBOARD_CONSISTENCY_BONUS_MODE === "percent") {
-      return `${Math.round(bonus * 100)}%`;
-    }
-    return `-${bonus.toFixed(2)}`;
-  }
-
   async function loadLeaderboardData(type) {
     const requestedType = type === "avg" ? "avg" : "avg";
     lbLoading.classList.remove("hidden");
@@ -1192,69 +1067,10 @@
           .order('games_played', { ascending: false });
         if (error) throw error;
         if (res && res.length > 0) {
-          const currentUser = getUserData().username;
-          const ranked = res
-            .map((p) => {
-              const gamesPlayed = Number(p.games_played) || 0;
-
-              if (gamesPlayed <= 0) {
-                return {
-                  ...p,
-                  gamesPlayed,
-                  isUnrated: true,
-                  avgRaw: Number.POSITIVE_INFINITY,
-                  avg: "—",
-                  rankScoreRaw: Number.POSITIVE_INFINITY,
-                  rankScore: "???",
-                  consistencyBonus: 0
-                };
-              }
-
-              const unscaledAvg = Number(p.total_guesses) / gamesPlayed;
-              const rawAvg = (Number(p.total_guesses) / GUESS_SCALE) / gamesPlayed;
-              if (!Number.isFinite(rawAvg)) return null;
-
-              const shouldBeUnrated = gamesPlayed === 1 && rawAvg <= LEADERBOARD_LOW_AVG_THRESHOLD;
-              if (shouldBeUnrated) {
-                return {
-                  ...p,
-                  gamesPlayed,
-                  isUnrated: true,
-                  avgRaw: rawAvg,
-                  avg: rawAvg.toFixed(2),
-                  rankScoreRaw: Number.POSITIVE_INFINITY,
-                  rankScore: "???",
-                  consistencyBonus: 0
-                };
-              }
-
-              const gameBonus = applyConsistencyBonus(rawAvg, gamesPlayed);
-              return {
-                ...p,
-                gamesPlayed,
-                isUnrated: false,
-                avgRaw: rawAvg,
-                avg: rawAvg.toFixed(2),
-                rankScoreRaw: gameBonus.score,
-                rankScore: gameBonus.score.toFixed(2),
-                consistencyBonus: gameBonus.bonusApplied
-              };
-            })
-            .filter(Boolean)
-            .sort((a, b) => {
-              if (a.isUnrated !== b.isUnrated) return a.isUnrated ? 1 : -1;
-              if (a.rankScoreRaw !== b.rankScoreRaw) return a.rankScoreRaw - b.rankScoreRaw;
-              if (a.avgRaw !== b.avgRaw) return a.avgRaw - b.avgRaw;
-              return (b.gamesPlayed || 0) - (a.gamesPlayed || 0);
-            })
-            .map((p, i) => ({ ...p, leaderboardRank: i + 1 }));
-
-          data = ranked.slice(0, 50);
-
-          if (currentUser && !data.some((p) => p.username === currentUser)) {
-            const currentPlayer = ranked.find((p) => p.username === currentUser);
-            if (currentPlayer) data.push(currentPlayer);
-          }
+          data = res.map(p => ({
+            ...p,
+            avg: ((p.total_guesses / GUESS_SCALE) / p.games_played).toFixed(2)
+          })).sort((a, b) => a.avg - b.avg).slice(0, 50);
         }
       }
 
@@ -1266,7 +1082,7 @@
         return;
       }
 
-  const currentUser = getUserData().username;
+      const currentUser = getUserData().username;
       
       const medal1 = `<svg class="lb-medal" viewBox="0 0 24 24" fill="none" stroke="#b8860b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`;
       const medal2 = `<svg class="lb-medal" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>`;
@@ -1275,14 +1091,12 @@
       data.forEach((player, index) => {
         const li = document.createElement("li");
         li.className = "lb-item";
-    const rankNumber = player.leaderboardRank ?? (index + 1);
-    if (rankNumber === 1) li.classList.add("rank-1");
-    else if (rankNumber === 2) li.classList.add("rank-2");
-    else if (rankNumber === 3) li.classList.add("rank-3");
-    if (player.isUnrated) li.classList.add("unrated-entry");
+        if (index === 0) li.classList.add("rank-1");
+        else if (index === 1) li.classList.add("rank-2");
+        else if (index === 2) li.classList.add("rank-3");
 
-    let medal = rankNumber === 1 ? medal1 : rankNumber === 2 ? medal2 : rankNumber === 3 ? medal3 : "";
-  const scoreVal = player.isUnrated ? "???" : (player.rankScore ?? player.avg);
+        let medal = index === 0 ? medal1 : index === 1 ? medal2 : index === 2 ? medal3 : "";
+  const scoreVal = player.avg;
         
         let hintBadge = "";
         if (player.last_hint_day_index === solutionIndex) {
@@ -1296,23 +1110,13 @@
         let displayName = player.username + hintBadge;
         if (player.username === currentUser) displayName += " <i style='opacity: 0.6; font-weight: normal; font-size: 0.85em;'>(Me)</i>";
 
-        const gamesPlayed = Number(player.gamesPlayed ?? player.games_played) || 0;
-        const bonusText = player.isUnrated
-          ? `<div class="lb-meta">Unrated for now • complete one more day to unlock your score</div>`
-          : Number(player.consistencyBonus) > 0
-            ? `<div class="lb-meta">Avg ${player.avg} guesses • milestone bonus active (${gamesPlayed} games played)</div>`
-            : `<div class="lb-meta">Avg ${player.avg} guesses</div>`;
-
         li.innerHTML = `
           <div class="lb-left">
-            <span class="rank">#${rankNumber}</span>
+            <span class="rank">#${index + 1}</span>
             ${medal}
-            <div class="lb-name">
-              <div class="lb-name-main">${displayName}</div>
-              ${bonusText}
-            </div>
+            <span class="lb-name">${displayName}</span>
           </div>
-          <div class="lb-score ${player.isUnrated ? "unrated" : ""}">${scoreVal}</div>
+          <div class="lb-score">${scoreVal}</div>
         `;
         lbList.appendChild(li);
       });
@@ -1327,54 +1131,30 @@
   async function updateUserStats(won, rawGuesses, hints) {
     if (hasSubmittedToLeaderboard) return;
     const userData = getUserData();
-    if (!userData.username) {
-      console.log("No username in userData");
-      return;
-    }
+    if (!userData.username) return;
 
     const scaledGuesses = rawGuesses * GUESS_SCALE;
     try {
       const { data: userRecord, error: fetchError } = await supabase.from('leaderboards').select('*').eq('uuid', userData.uuid).maybeSingle();
-      if (fetchError) {
-        console.error("Error fetching user record:", fetchError);
-        return;
-      }
-      if (!userRecord) {
-        console.error("No user record found for uuid:", userData.uuid);
-        return;
-      }
+      if (fetchError || !userRecord) return;
 
-      const previousGamesPlayed = Number(userRecord.games_played) || 0;
-      const newGamesPlayed = previousGamesPlayed + 1;
-      const previousBonus = getGamesPlayedBonus(previousGamesPlayed);
-      const currentBonus = getGamesPlayedBonus(newGamesPlayed);
+      const lastPlayedFromState = userRecord.saved_state?.solutionIndex;
+      const lastPlayedFromColumn = typeof userRecord.last_played_day_index === "number" ? userRecord.last_played_day_index : null;
+      const lastPlayedDay = typeof lastPlayedFromState === "number" ? lastPlayedFromState : lastPlayedFromColumn;
+      const skippedAtLeastOneDay = typeof lastPlayedDay === "number" && (solutionIndex - lastPlayedDay) > 1;
+
+      const currentStreak = skippedAtLeastOneDay ? 0 : (userRecord.winstreak || 0);
+      const newWinstreak = won ? currentStreak + 1 : 0;
 
       const updates = {
-        games_played: newGamesPlayed,
+        games_played: userRecord.games_played + 1,
         total_guesses: userRecord.total_guesses + scaledGuesses,
-        winstreak: userRecord.winstreak ?? 0,
-        max_winstreak: userRecord.max_winstreak ?? 0,
+        winstreak: newWinstreak,
+        max_winstreak: Math.max(newWinstreak, userRecord.max_winstreak ?? 0),
         total_hints: (userRecord.total_hints || 0) + hints,
         last_hint_day_index: hints > 0 ? solutionIndex : userRecord.last_hint_day_index ?? null
       };
-      const { error: updateError } = await supabase.from('leaderboards').update(updates).eq('uuid', userData.uuid);
-      if (updateError) {
-        console.error("Error updating stats in DB:", updateError);
-        return;
-      }
-
-      console.log("✅ Stats updated successfully - Games: " + newGamesPlayed + ", Total guesses: " + updates.total_guesses);
-      console.log("Previous bonus: " + previousBonus.toFixed(2) + ", Current bonus: " + currentBonus.toFixed(2));
-
-      if (currentBonus > previousBonus) {
-        const bonusReduction = (currentBonus - previousBonus).toFixed(2);
-        const rewardText = `🎉 Milestone! ${newGamesPlayed} games played. Your score now benefits from a -${bonusReduction} bonus.`;
-        console.log("Showing milestone message: " + rewardText);
-        window.setTimeout(() => showMessage(rewardText), 900);
-      } else {
-        console.log("No new bonus tier reached");
-      }
-
+      await supabase.from('leaderboards').update(updates).eq('uuid', userData.uuid);
       hasSubmittedToLeaderboard = true;
       saveState();
     } catch (e) { console.error("Error updating stats", e); }

@@ -56,18 +56,14 @@
       </div>
 
       <div class="topbar__right">
-        <a id="race-lobby-button" class="icon-button" href="race.html" aria-label="Open race lobby" title="Race lobby">
+  <a id="race-lobby-button" class="icon-button" href="race.html" aria-label="Open race lobby" title="Race lobby">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline>
-            <line x1="13" y1="19" x2="19" y2="13"></line>
-            <line x1="16" y1="16" x2="21" y2="21"></line>
-            <line x1="19" y1="21" x2="21" y2="19"></line>
-            <polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"></polyline>
-            <line x1="5" y1="14" x2="9" y2="18"></line>
-            <line x1="7" y1="17" x2="4" y2="20"></line>
-            <line x1="3" y1="19" x2="5" y2="21"></line>
+            <path d="M5 3v18"></path>
+            <path d="M5 4h12l-2.2 4 2.2 4H5"></path>
           </svg>
-        </a>        <button id="leaderboard-button" class="icon-button" type="button" aria-label="Leaderboards" title="Leaderboards">
+        </a>
+
+        <button id="leaderboard-button" class="icon-button" type="button" aria-label="Leaderboards" title="Leaderboards">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
             <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
@@ -149,16 +145,6 @@
       <div id="stats-view" class="hidden">
         <div class="lb-header">
           <h2 class="modal__title">Leaderboards</h2>
-        </div>
-        <p class="lb-subtitle">Rankings are based on average guesses, with a small consistency boost for active streaks.</p>
-        <button id="lb-rules-toggle" class="lb-rules-toggle" type="button" aria-expanded="false" aria-controls="lb-rules-panel">Leaderboard rules</button>
-        <div id="lb-rules-panel" class="lb-rules-panel hidden">
-          <p><strong>How ranking works</strong></p>
-          <ul>
-            <li><strong>Main score:</strong> your average guesses per game. Lower is better.</li>
-            <li><strong>Unrated (???):</strong> only appears when you start. Once your first-game average goes above 3.00, you become rated and appear on the leaderboard immediately.</li>
-            <li><strong>Consistency bonus:</strong> reach 3, 7, 21, or 50 total games to unlock small score bonuses. The more you play, the better your score gets. <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg> = played</li>
-          </ul>
         </div>
         <div class="tab-content">
           <div id="lb-loading" class="lb-loading">Loading...</div>
