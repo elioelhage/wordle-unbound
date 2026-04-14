@@ -229,6 +229,13 @@
       setRaceMessage("You left this match. Room closed.");
       setStatus("Room closed.");
     }
+    
+    // Clear out opponent data immediately so we don't hold them in lobby state
+    opponentName = null;
+    opponentReady = false;
+    opponentProgress = 0;
+    opponentBestCorrect = 0;
+    
     exitRoomToLobby();
   }
 
@@ -325,6 +332,29 @@
 
   function handleOpponentLeft(reasonName) {
     if (opponentLeftHandled || !currentRoom) return;
+
+    // Distinguish if the race has actually started or if we are still pre-game.
+    if (!raceStarted) {
+      // PRE-GAME LOBBY: Opponent disconnected before starting
+      const quitter = reasonName || opponentName || "Opponent";
+      opponentName = null;
+      opponentReady = false;
+      opponentBestCorrect = 0;
+      opponentProgress = 0;
+      opponentHistorySet.clear();
+      updatePresenceUI();
+      setStatus(`${quitter} left the waiting room.`, "info");
+      
+      // Explicitly revert visuals to waiting
+      if (presenceOpponentNameEl) presenceOpponentNameEl.textContent = "Waiting...";
+      if (presenceOpponentReadyEl) {
+        presenceOpponentReadyEl.textContent = "Not ready";
+        presenceOpponentReadyEl.className = "ready-badge not-ready";
+      }
+      return;
+    }
+
+    // MID-GAME: Opponent leaves while race is active
     opponentLeftHandled = true;
     raceFinished = true;
     stopStopwatch();
@@ -1038,6 +1068,7 @@
         const roomCode = String(payload.roomCode || currentRoom || "");
         if (roomCode) terminatedRooms.add(roomCode);
         if (!currentRoom || roomCode !== currentRoom) return;
+        
         handleOpponentLeft(payload.username || "Opponent");
       });
 
@@ -1100,6 +1131,14 @@
     }
 
     if (channel) {
+      if (currentRoom && currentUser) {
+        sendRaceEvent("race_abort", {
+          uuid: currentUser.uuid,
+          username: currentUser.username || "Player",
+          roomCode: currentRoom,
+          reason: "left_room"
+        }).catch(() => {});
+      }
       supabase.removeChannel(channel).catch(() => {});
       channel = null;
     }
@@ -1337,6 +1376,15 @@
     if (raceTimer) clearInterval(raceTimer);
     if (channel) {
       try {
+        if (currentRoom && currentUser) {
+          // Attempt a synchronous/best-effort send before destroying
+          await sendRaceEvent("race_abort", {
+            uuid: currentUser.uuid,
+            username: currentUser.username || "Player",
+            roomCode: currentRoom,
+            reason: "left_room"
+          });
+        }
         await supabase.removeChannel(channel);
       } catch {}
     }
