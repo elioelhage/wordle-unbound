@@ -62,6 +62,7 @@
   const accountMenuPanel = document.getElementById("account-menu-panel");
   const accountActionBtn = document.getElementById("account-action-btn");
   const passafloraThemeBtn = document.getElementById("passaflora-theme-btn");
+  const giveUpBtn = document.getElementById("give-up-btn");
   const leaderboardModal = document.getElementById("leaderboard-modal");
   const closeLeaderboardBtn = document.getElementById("close-leaderboard");
   const leaderboardCard = document.querySelector(".leaderboard-card");
@@ -661,6 +662,29 @@
       accountMenuPanel?.classList.add("hidden");
       accountMenuButton?.setAttribute("aria-expanded", "false");
       showMessage("Passaflora theme on.");
+    });
+
+    giveUpBtn?.addEventListener("click", () => {
+      if (gameOver) {
+        showMessage("Game already over.");
+        accountMenuPanel?.classList.add("hidden");
+        accountMenuButton?.setAttribute("aria-expanded", "false");
+        return;
+      }
+
+      if (!confirm("Give up? You will see the word, but the game won't count toward your score.")) {
+        return;
+      }
+
+      // Show the word without counting it as a played game
+      const wordToShow = currentWord?.toUpperCase() || "Unknown";
+      gameOver = true;
+      showMessage(`Word: ${wordToShow}`);
+      showEndModal(false, "Gave up");
+      
+      // Close menu
+      accountMenuPanel?.classList.add("hidden");
+      accountMenuButton?.setAttribute("aria-expanded", "false");
     });
   }
 

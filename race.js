@@ -181,6 +181,14 @@
       exitRoomToLobby();
       return;
     }
+    
+    // Clear opponent status visually BEFORE preparing next round
+    if (presenceOpponentNameEl) presenceOpponentNameEl.textContent = "Waiting...";
+    if (presenceOpponentReadyEl) {
+      presenceOpponentReadyEl.textContent = "Not ready";
+      presenceOpponentReadyEl.className = "ready-badge not-ready";
+    }
+    
     prepareNextRoundInRoom();
   }
 
