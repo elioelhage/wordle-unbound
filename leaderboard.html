@@ -697,7 +697,8 @@
       <ul>
         <li><strong>Main score:</strong> your average guesses per game (lower is better).</li>
         <li><strong>Unrated (???):</strong> only appears when you start. Once your first-game average goes above 3.00, you become rated and appear on the leaderboard immediately.</li>
-        <li><strong>Consistency bonus:</strong> reach 3, 7, 21, or 50 total games to unlock small score bonuses. The more you play, the better your score gets. <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg> = played</li>
+        <li><strong>Consistency bonus:</strong> reach 3, 7, 21, or 50 total games to unlock small score bonuses. The more you play, the better your score gets. <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 1em; height: 1em; vertical-align: middle;"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg> = played</li>
+        <li><strong>Inactivity Decay:</strong> The top 3 players who don't play for 3+ days will receive a +0.025 penalty each day to keep competition active.</li>
       </ul>
     </div>
 
@@ -833,6 +834,7 @@
 
       const hintIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A6 6 0 1 0 7.5 11.5c.76.76 1.23 1.52 1.41 2.5"></path></svg>`;
       const playedIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>`;
+      const decayIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>`;
 
       function renderState(text) {
         listEl.innerHTML = `<li class="state">${text}</li>`;
@@ -866,10 +868,15 @@
           const playedToday = Number(player.last_played_day_index) === todayIndex
             || (player.saved_state && Number(player.saved_state.solutionIndex) === todayIndex && Boolean(player.saved_state.gameOver));
 
+          const decayBadge = player.hasDecay 
+            ? `<span class="badge decay" style="color: #e63946;" title="Inactivity penalty: +${player.decayPenalty.toFixed(3)}">${decayIcon}</span>`
+            : "";
+
           const badges = `
             <span class="badges">
               ${playedToday ? `<span class="badge played" title="Solved today's word">${playedIcon}</span>` : ""}
               ${usedHintToday ? `<span class="badge hint" title="Used hints today">${hintIcon}</span>` : ""}
+              ${decayBadge}
             </span>
           `;
 
@@ -935,10 +942,17 @@
             .map((p) => {
               const unscaledAvg = p.gamesPlayed > 0 ? Number(p.total_guesses || 0) / p.gamesPlayed : Number.POSITIVE_INFINITY;
               const scaledAvg = p.gamesPlayed > 0 ? (Number(p.total_guesses || 0) / GUESS_SCALE) / p.gamesPlayed : Number.POSITIVE_INFINITY;
+              
+              let lastPlayedVal = Number(p.last_played_day_index);
+              if (Number.isNaN(lastPlayedVal) && p.saved_state && p.saved_state.solutionIndex) {
+                 if (p.saved_state.gameOver) lastPlayedVal = Number(p.saved_state.solutionIndex);
+              }
+
               return {
                 ...p,
                 rawAvg: scaledAvg,
                 unscaledRawAvg: unscaledAvg,
+                lastPlayedVal,
                 isUnrated: p.gamesPlayed === 0 || (p.gamesPlayed === 1 && scaledAvg <= LEADERBOARD_LOW_AVG_THRESHOLD),
                 adjustedScore: p.gamesPlayed > 0 ? applyConsistencyBonus(scaledAvg, p.gamesPlayed) : Number.POSITIVE_INFINITY
               };
@@ -948,8 +962,39 @@
               if (Number(a.adjustedScore) !== Number(b.adjustedScore)) return Number(a.adjustedScore) - Number(b.adjustedScore);
               if (Number(a.rawAvg) !== Number(b.rawAvg)) return Number(a.rawAvg) - Number(b.rawAvg);
               return Number(b.gamesPlayed || 0) - Number(a.gamesPlayed || 0);
-            })
-            .map((p, idx) => {
+            });
+
+          // Apply inactivity decay to top 3 rated players
+          let ratedCount = 0;
+          for (let i = 0; i < ranked.length; i++) {
+            const p = ranked[i];
+            if (!p.isUnrated) {
+              ratedCount++;
+              if (ratedCount <= 3) {
+                const lp = Number.isFinite(p.lastPlayedVal) ? p.lastPlayedVal : todayIndex;
+                const daysInactive = Math.max(0, todayIndex - lp);
+                if (daysInactive >= 3) {
+                  const penalty = (daysInactive - 2) * 0.025;
+                  p.adjustedScore += penalty;
+                  p.rawAvg += penalty;
+                  p.hasDecay = true;
+                  p.decayPenalty = penalty;
+                }
+              }
+              if (ratedCount === 3) break;
+            }
+          }
+
+          // Re-sort after decay
+          ranked.sort((a, b) => {
+            if (a.isUnrated !== b.isUnrated) return a.isUnrated ? 1 : -1;
+            if (Number(a.adjustedScore) !== Number(b.adjustedScore)) return Number(a.adjustedScore) - Number(b.adjustedScore);
+            if (Number(a.rawAvg) !== Number(b.rawAvg)) return Number(a.rawAvg) - Number(b.rawAvg);
+            return Number(b.gamesPlayed || 0) - Number(a.gamesPlayed || 0);
+          });
+
+          // Assign ranks
+          const rankedFinal = ranked.map((p, idx) => {
               const gamesPlayed = Number(p.gamesPlayed) || 0;
 
               return {
@@ -959,9 +1004,9 @@
               };
             });
 
-          let rankedRows = ranked.slice(0, 50);
+          let rankedRows = rankedFinal.slice(0, 50);
           if (currentUser && !rankedRows.some((p) => p.username === currentUser)) {
-            const me = ranked.find((p) => p.username === currentUser);
+            const me = rankedFinal.find((p) => p.username === currentUser);
             if (me) rankedRows = [...rankedRows, me];
           }
 
