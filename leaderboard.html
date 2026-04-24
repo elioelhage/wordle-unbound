@@ -196,9 +196,9 @@
       background:
         radial-gradient(145% 120% at 0% 0%, rgba(106, 170, 100, 0.22), transparent 52%),
         radial-gradient(120% 95% at 100% 0%, rgba(96, 165, 250, 0.16), transparent 58%),
-        linear-gradient(165deg, #0c0f14 0%, #171b24 48%, #0d1118 100%);
-      border-color: #34363a;
-      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.36);
+        var(--surface);
+      border-color: var(--border);
+      box-shadow: var(--shadow);
     }
 
     :root:not([data-theme="dark"]) .shell .meta {
@@ -302,6 +302,12 @@
       max-height: min(74vh, 750px);
       overflow-y: auto;
       padding-right: 0.15rem;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .list::-webkit-scrollbar {
+      display: none;
     }
 
     .item {
@@ -727,16 +733,16 @@
 
     <section class="shell" aria-label="Leaderboard list">
       <div class="tabs">
-        <button id="tab-lifetime" class="tab-btn active" type="button" data-tab="lifetime">
-          Lifetime • Most Games
-        </button>
-        <button id="tab-weekly" class="tab-btn" type="button" data-tab="weekly">
+        <button id="tab-weekly" class="tab-btn active" type="button" data-tab="weekly">
           This Week • Lowest Average
+        </button>
+        <button id="tab-lifetime" class="tab-btn" type="button" data-tab="lifetime">
+          Lifetime • Most Games
         </button>
       </div>
 
       <div class="meta">
-        <span id="meta-label">Top 50 • Most games played</span>
+        <span id="meta-label">Top 50 • Lowest average this week</span>
         <span id="meta-count"></span>
       </div>
       <div id="lb-progress" class="lb-progress" aria-hidden="true">
@@ -778,7 +784,7 @@
       const tabLifetimeBtn = document.getElementById("tab-lifetime");
       const tabWeeklyBtn = document.getElementById("tab-weekly");
 
-      let currentTab = "lifetime";
+      let currentTab = "weekly";
       let allPlayers = [];
 
       const launchDate = Date.UTC(2026, 3, 1); // April 1, 2026
