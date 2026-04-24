@@ -25,9 +25,44 @@ A word-guessing game inspired by Wordle, built with vanilla JavaScript and power
 ## 🚀 Getting Started
 
 ### Play Online
-1. Visit the game at `https://wordshift.dev` 
+1. Visit the game at `https://yourdomain.com` (once deployed)
 2. Create an account with a username and password
 3. Start playing!
+
+### Run Locally
+1. Clone this repository
+2. Open `index.html` in your web browser
+3. That's it! No installation needed
+
+## 📁 Project Structure
+
+```
+WordShift/
+├── index.html              # Main game page
+├── leaderboard.html        # Leaderboard page
+├── script.js               # Main game logic
+├── race.js                 # Race/challenge mode
+├── style.css               # Styling
+├── race.css                # Race mode styling
+├── backend/                # Server-side code (deploy to Render)
+│   ├── config.js           # ⚠️ Contains API keys (never commit)
+│   ├── api.js              # Backend API template
+│   └── README.md           # Backend setup guide
+└── README.md               # This file
+```
+
+## 💾 Save Your Progress
+
+- Your game saves automatically to your browser
+- Your account stats are stored in our database
+- You can play on different devices with the same account
+
+## 🔧 Technologies Used
+
+- **Frontend**: HTML, CSS, JavaScript
+- **Backend**: Node.js + Express (optional, for secure deployments)
+- **Database**: Supabase (PostgreSQL)
+- **Hosting**: GitHub Pages (frontend) + Render (backend, optional)
 
 ## 📊 Leaderboard
 
@@ -36,6 +71,14 @@ See who has the best average guesses for games played this week. Resets every Su
 
 ### Lifetime Most Games
 See who's played the most games of all time.
+
+## 🐛 Reporting Issues
+
+Found a bug? Here's how to help:
+1. Try clearing your browser cache
+2. Try a different browser
+3. Check the browser console (F12) for error messages
+4. Contact the developer with details
 
 ## ✨ Tips for Better Scores
 

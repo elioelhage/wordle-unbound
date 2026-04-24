@@ -1,7 +1,7 @@
 (() => {
-  const supabaseUrl = "https://hcehsxnudbwjydvenlfz.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8";
-  const supabase = window.supabase?.createClient(supabaseUrl, supabaseKey);
+  // Keys are now protected on backend - frontend calls API instead
+  const API_URL = "https://wordshift-api.onrender.com"; // Change to your Render URL
+  const supabase = window.supabase?.createClient ? null : null; // Not used directly
 
   const createStage = document.getElementById("create-stage");
   const createRoomBtn = document.getElementById("create-room-btn");

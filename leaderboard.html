@@ -767,9 +767,11 @@
 
   <script>
     (() => {
-      const supabaseUrl = "https://hcehsxnudbwjydvenlfz.supabase.co";
-      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8";
-      const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+      // Use backend API instead of direct Supabase access (keys are secured on backend)
+      const API_URL = "https://wordshift-api.onrender.com"; // Change this to your Render URL
+      
+      // Placeholder supabase client (not used, kept for compatibility)
+      const supabase = null;
       const listEl = document.getElementById("lb-list");
       const metaCountEl = document.getElementById("meta-count");
       const lbProgressEl = document.getElementById("lb-progress");
@@ -898,15 +900,10 @@
           console.log("Starting leaderboard load...");
           console.log("Today index:", todayIndex);
 
-          let { data, error } = await supabase
-            .from("leaderboards")
-            .select("username, games_played, total_guesses, created_at, saved_state")
-            .order("games_played", { ascending: false });
-
-          if (error) {
-            console.error("Supabase query error:", error);
-            throw new Error(`Query failed: ${error.message}`);
-          }
+          // Call backend API instead of Supabase directly
+          const response = await fetch(`${API_URL}/api/leaderboard`);
+          if (!response.ok) throw new Error(`API error: ${response.status}`);
+          const data = await response.json();
 
           console.log("Raw data received:", data);
           console.log("Data length:", data ? data.length : 0);
