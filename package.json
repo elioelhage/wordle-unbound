@@ -1,0 +1,17 @@
+{
+  "name": "wordshift",
+  "version": "1.0.0",
+  "description": "WordShift - A word guessing game with leaderboard",
+  "main": "backend/api.js",
+  "scripts": {
+    "start": "node backend/api.js",
+    "dev": "node backend/api.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
