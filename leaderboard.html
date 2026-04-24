@@ -14,10 +14,7 @@
         var theme = saved || (prefersDark ? "dark" : "light");
         document.documentElement.setAttribute("data-theme", theme);
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute("con          ({ data, error } = await supabase
-            .from("leaderboards")
-            .select("username, games_played, total_guesses, created_at, saved_state")
-            .order("games_played", { ascending: false }));", theme === "dark" ? "#121213" : "#ffffff");
+        if (meta) meta.setAttribute("content", theme === "dark" ? "#121213" : "#ffffff");
       } catch (_) {}
     })();
   </script>
@@ -183,11 +180,9 @@
     }
 
     .shell {
-      border: 1px solid var(--border);
       border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
       border-radius: 24px;
       background: var(--surface);
-      background: color-mix(in srgb, var(--surface) 93%, transparent);
       box-shadow: var(--shadow);
       padding: 1rem;
     }
@@ -197,12 +192,11 @@
         radial-gradient(145% 120% at 0% 0%, rgba(106, 170, 100, 0.22), transparent 52%),
         radial-gradient(120% 95% at 100% 0%, rgba(96, 165, 250, 0.16), transparent 58%),
         var(--surface);
-      border-color: var(--border);
-      box-shadow: var(--shadow);
     }
 
-    :root:not([data-theme="dark"]) .shell .meta {
-      color: #a0a4af;
+    :root[data-theme="dark"] .shell {
+      background: var(--surface);
+      border-color: color-mix(in srgb, var(--border) 78%, transparent);
     }
 
     .meta {
@@ -315,20 +309,30 @@
       justify-content: space-between;
       align-items: center;
       gap: 0.7rem;
-      border: 1px solid var(--border);
       border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
       border-radius: 15px;
       background: var(--surface);
-      background: linear-gradient(150deg, color-mix(in srgb, var(--surface) 88%, #fff 12%), var(--surface));
       padding: 0.78rem 0.92rem;
       transition: transform 160ms ease, box-shadow 180ms ease, border-color 180ms ease;
       animation: rise 220ms ease both;
+    }
+
+    :root:not([data-theme="dark"]) .item {
+      background: linear-gradient(150deg, color-mix(in srgb, var(--surface) 88%, #fff 12%), var(--surface));
+    }
+
+    :root[data-theme="dark"] .item {
+      background: linear-gradient(150deg, color-mix(in srgb, var(--surface) 88%, #000 12%), var(--surface));
     }
 
     .item:hover {
       transform: translateY(-1px);
       box-shadow: 0 10px 20px rgba(0, 0, 0, 0.14);
       border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    }
+
+    :root[data-theme="dark"] .item:hover {
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
     }
 
     .item.rank-1 {
@@ -767,11 +771,10 @@
 
   <script>
     (() => {
-      // Use backend API instead of direct Supabase access (keys are secured on backend)
-      const API_URL = "https://wordshift-api.onrender.com"; // Change this to your Render URL
-      
-      // Placeholder supabase client (not used, kept for compatibility)
-      const supabase = null;
+      // Use direct Supabase connection (data is only in Supabase, not Render)
+      const supabaseUrl = "https://hcehsxnudbwjydvenlfz.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8";
+      const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
       const listEl = document.getElementById("lb-list");
       const metaCountEl = document.getElementById("meta-count");
       const lbProgressEl = document.getElementById("lb-progress");
@@ -900,10 +903,16 @@
           console.log("Starting leaderboard load...");
           console.log("Today index:", todayIndex);
 
-          // Call backend API instead of Supabase directly
-          const response = await fetch(`${API_URL}/api/leaderboard`);
-          if (!response.ok) throw new Error(`API error: ${response.status}`);
-          const data = await response.json();
+          // Call Supabase directly (data is only there)
+          let { data, error } = await supabase
+            .from("leaderboards")
+            .select("username, games_played, total_guesses, created_at, saved_state")
+            .order("games_played", { ascending: false });
+
+          if (error) {
+            console.error("Supabase query error:", error);
+            throw new Error(`Query failed: ${error.message}`);
+          }
 
           console.log("Raw data received:", data);
           console.log("Data length:", data ? data.length : 0);
