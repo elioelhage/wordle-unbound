@@ -1,11 +1,12 @@
 /**
  * WORDSHIFT BACKEND API
- * Hosted on Render - calls Supabase securely server-side
- * Frontend never has direct access to Supabase credentials
+ * Purpose: Serve Supabase credentials securely to frontend
+ * The frontend uses these keys to access Supabase directly
+ * Keys are protected in Render environment variables (not in code)
  */
 
 const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
+const cors = require('cors');
 
 // ============================================================
 // ENVIRONMENT VARIABLES (set in Render dashboard)
@@ -21,11 +22,13 @@ if (!supabaseUrl || !supabaseKey) {
   process.exit(1);
 }
 
-// Initialize Supabase client (server-side only)
-const supabase = createClient(supabaseUrl, supabaseKey);
 const app = express();
 
-// Middleware
+// ============================================================
+// MIDDLEWARE
+// ============================================================
+// Enable CORS for all origins (frontend needs to fetch the keys)
+app.use(cors());
 app.use(express.json());
 
 // ============================================================
@@ -37,38 +40,13 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Get leaderboard (lifetime)
-app.get('/api/leaderboard', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('leaderboards')
-      .select('username, games_played, total_guesses, created_at, saved_state')
-      .order('games_played', { ascending: false });
-    
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    console.error('Leaderboard error:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get player stats by username
-app.get('/api/player/:username', async (req, res) => {
-  try {
-    const { username } = req.params;
-    const { data, error } = await supabase
-      .from('leaderboards')
-      .select('*')
-      .eq('username', username)
-      .single();
-    
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    console.error('Player stats error:', err);
-    res.status(500).json({ error: err.message });
-  }
+// Serve Supabase credentials to frontend (safe to expose from backend)
+// Frontend will use these keys to connect to Supabase directly
+app.get('/api/keys', (req, res) => {
+  res.json({
+    supabaseUrl: supabaseUrl,
+    supabaseKey: supabaseKey
+  });
 });
 
 // ============================================================
@@ -77,5 +55,5 @@ app.get('/api/player/:username', async (req, res) => {
 app.listen(port, () => {
   console.log(`✅ WordShift API running on port ${port}`);
   console.log(`   Health check: http://localhost:${port}/health`);
-  console.log(`   Leaderboard: http://localhost:${port}/api/leaderboard`);
+  console.log(`   Get keys: http://localhost:${port}/api/keys`);
 });

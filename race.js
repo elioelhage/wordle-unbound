@@ -1,8 +1,29 @@
 (() => {
-  // Supabase connection for word pool and real-time features
-  const supabaseUrl = "https://hcehsxnudbwjydvenlfz.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8";
-  const supabase = window.supabase?.createClient(supabaseUrl, supabaseKey);
+  // Fetch Supabase credentials from backend API (keys protected in Render)
+  const API_URL = "https://wordshift-api.onrender.com"; // Change to your Render URL
+  let supabase = null;
+
+  // Initialize Supabase with keys from backend
+  (async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/keys`);
+      const { supabaseUrl, supabaseKey } = await res.json();
+      supabase = window.supabase?.createClient(supabaseUrl, supabaseKey);
+      console.log('✅ Supabase initialized from backend keys');
+    } catch (err) {
+      console.error('Failed to fetch keys from backend:', err);
+      // Fallback: use hardcoded keys (for development)
+      try {
+        supabase = window.supabase?.createClient(
+          "https://hcehsxnudbwjydvenlfz.supabase.co",
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8"
+        );
+        console.log('⚠️ Using fallback hardcoded keys (backend unavailable)');
+      } catch (fallbackErr) {
+        console.error('Failed to initialize Supabase:', fallbackErr);
+      }
+    }
+  })();
 
   const createStage = document.getElementById("create-stage");
   const createRoomBtn = document.getElementById("create-room-btn");

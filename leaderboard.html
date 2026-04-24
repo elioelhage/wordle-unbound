@@ -348,6 +348,12 @@
     }
 
     .item.rank-2 {
+      background:
+        radial-gradient(130% 105% at 0% 0%, rgba(255, 255, 255, 0.9), transparent 56%),
+        linear-gradient(145deg, #ffffff 0%, #e7edf6 45%, #bcc9da 100%);
+      border: 1px solid #8fa0b7;
+      color: #101726;
+      box-shadow: 0 14px 30px rgba(111, 130, 156, 0.38);
       padding: 0 1.34rem;
       min-height: 69px;
       height: 69px;
@@ -358,7 +364,6 @@
         radial-gradient(135% 110% at 0% 0%, rgba(255, 255, 255, 0.95), transparent 55%),
         linear-gradient(145deg, #ffffff 0%, #edf3fb 38%, #c9d4e4 72%, #b4c1d5 100%);
       border-color: #8194ae;
-      color: #101726;
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.72),
         inset 0 -1px 0 rgba(124, 142, 166, 0.28),
@@ -369,35 +374,23 @@
 
     :root[data-theme="dark"] .item.rank-2 {
       background:
-        radial-gradient(130% 105% at 0% 0%, rgba(248, 250, 252, 0.12), transparent 56%),
-        linear-gradient(145deg, #454f63 0%, #353d4f 48%, #2a3140 100%);
-      border: 1px solid #454f63;
-      color: #f0f4f9;
-      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+        radial-gradient(130% 105% at 0% 0%, rgba(248, 250, 252, 0.24), transparent 56%),
+        linear-gradient(145deg, #d9e2ef 0%, #9faec3 48%, #7789a3 100%);
+      border-color: #b6c2d5;
+      color: #0f172a;
+      box-shadow: 0 14px 30px rgba(146, 163, 186, 0.3);
     }
 
     .item.rank-3 {
-      padding: 0 1.22rem;
-      min-height: 69px;
-      height: 69px;
-    }
-
-    :root:not([data-theme="dark"]) .item.rank-3 {
       background:
         radial-gradient(120% 100% at 0% 0%, rgba(255, 241, 227, 0.6), transparent 58%),
         linear-gradient(140deg, #ebb886 0%, #c78448 52%, #aa642d 100%);
       border: 1px solid #9f5d2a;
       color: #24160c;
       box-shadow: 0 12px 24px rgba(170, 99, 44, 0.3);
-    }
-
-    :root[data-theme="dark"] .item.rank-3 {
-      background:
-        radial-gradient(120% 100% at 0% 0%, rgba(139, 95, 54, 0.15), transparent 58%),
-        linear-gradient(140deg, #5a4a35 0%, #453830 52%, #3a2e24 100%);
-      border: 1px solid #4a3d2f;
-      color: #f0d9b8;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+      padding: 0 1.22rem;
+      min-height: 69px;
+      height: 69px;
     }
 
     .item.rank-1 .rank,
@@ -778,10 +771,34 @@
 
   <script>
     (() => {
-      // Use direct Supabase connection (data is only in Supabase, not Render)
-      const supabaseUrl = "https://hcehsxnudbwjydvenlfz.supabase.co";
-      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8";
-      const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+      // Fetch Supabase credentials from backend API (keys protected in Render)
+      const API_URL = "https://wordshift-api.onrender.com"; // Change to your Render URL
+      let supabase = null;
+
+      // Initialize Supabase with keys from backend
+      (async () => {
+        try {
+          const res = await fetch(`${API_URL}/api/keys`);
+          const { supabaseUrl, supabaseKey } = await res.json();
+          supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+          console.log('✅ Supabase initialized from backend keys');
+          // Once initialized, load the leaderboard
+          setTimeout(() => loadAndRenderLeaderboard(), 100);
+        } catch (err) {
+          console.error('Failed to fetch keys from backend:', err);
+          // Fallback: use hardcoded keys (for development)
+          try {
+            supabase = window.supabase.createClient(
+              "https://hcehsxnudbwjydvenlfz.supabase.co",
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWhzeG51ZGJ3anlkdmVubGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzY4NzAsImV4cCI6MjA5MDY1Mjg3MH0.dPawhX90yZrme7nftMTq6A1j-KGqfHZJ8QnbBeFurl8"
+            );
+            console.log('⚠️ Using fallback hardcoded keys (backend unavailable)');
+            setTimeout(() => loadAndRenderLeaderboard(), 100);
+          } catch (fallbackErr) {
+            console.error('Failed to initialize Supabase:', fallbackErr);
+          }
+        }
+      })();
       const listEl = document.getElementById("lb-list");
       const metaCountEl = document.getElementById("meta-count");
       const lbProgressEl = document.getElementById("lb-progress");
