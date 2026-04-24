@@ -35,6 +35,15 @@ app.use(express.json());
 // API ENDPOINTS
 // ============================================================
 
+// Root route (useful for Render URL checks)
+app.get('/', (req, res) => {
+  res.json({
+    service: 'WordShift backend',
+    status: 'online',
+    endpoints: ['/health', '/api/keys']
+  });
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
@@ -46,6 +55,14 @@ app.get('/api/keys', (req, res) => {
   res.json({
     supabaseUrl: supabaseUrl,
     supabaseKey: supabaseKey
+  });
+});
+
+// Fallback for unknown routes
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: 'Use /health or /api/keys'
   });
 });
 

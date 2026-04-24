@@ -305,7 +305,7 @@
   }
 
   async function fetchTodaysWord() {
-    if (WORD_SOURCE === "supabase" && supabase) {
+  if (WORD_SOURCE === "supabase" && supabase) {
       try {
         const { data, error } = await supabase
           .from('words')
@@ -333,7 +333,7 @@
         wordLength = solution.length;
       }
     } else {
-      const obj = DAILY_WORDS[solutionIndex];
+      const obj = DAILY_WORDS[solutionIndex % DAILY_WORDS.length];
       solution = obj.word.toUpperCase();
       wordCategory = obj.category;
       wordLength = solution.length;
@@ -343,7 +343,7 @@
     maxHints = wordLength >= 7 ? 3 : 2; // Dynamic 3rd hint for 7+ letters
 
     const userData = getUserData();
-    if (userData.username) {
+    if (userData.username && supabase) {
       try {
         const { data: remoteSync, error: syncErr } = await supabase
           .from('leaderboards')
