@@ -886,51 +886,61 @@
         renderState("Loading leaderboard...");
 
         try {
-          let data = null;
-          let error = null;
+          console.log("Starting leaderboard load...");
+          console.log("Today index:", todayIndex);
 
-          ({ data, error } = await supabase
+          let { data, error } = await supabase
             .from("leaderboards")
             .select("username, games_played, total_guesses, created_at, last_played_day_index")
-            .order("games_played", { ascending: false }));
+            .order("games_played", { ascending: false });
 
-          if (error) throw error;
+          if (error) {
+            console.error("Supabase query error:", error);
+            throw new Error(`Query failed: ${error.message}`);
+          }
+
+          console.log("Raw data received:", data);
+          console.log("Data length:", data ? data.length : 0);
+
+          if (!data || data.length === 0) {
+            renderState("No players found in database.");
+            setLoading(false);
+            return;
+          }
 
           allPlayers = (data || [])
             .filter((p) => p.username)
             .map((p) => {
               const gamesPlayed = Number(p.games_played) || 0;
-              const totalGuesses = Number(p.total_guesses || 0);
-              const GUESS_SCALE = 10; // Original system stored guesses * 10
+              const totalGuesses = Number(p.total_guesses) || 0;
+              const GUESS_SCALE = 10;
               const rawAvg = gamesPlayed > 0 ? (totalGuesses / GUESS_SCALE) / gamesPlayed : 0;
 
-              // Get last played day index
               let lastPlayedVal = Number(p.last_played_day_index);
-              if (Number.isNaN(lastPlayedVal)) {
-                lastPlayedVal = -999; // Far in the past if unknown
+              if (Number.isNaN(lastPlayedVal) || lastPlayedVal === null) {
+                lastPlayedVal = todayIndex; // Assume recent if unknown
               }
 
-              // Calculate days since last played
-              const daysSinceLastPlayed = todayIndex - lastPlayedVal;
-
-              // Check if player played this week (0-6 days ago, assuming week = 7 days)
-              const playedThisWeek = daysSinceLastPlayed >= 0 && daysSinceLastPlayed < 7;
+              const daysSinceLastPlayed = Math.max(0, todayIndex - lastPlayedVal);
+              const playedThisWeek = daysSinceLastPlayed < 7;
 
               return {
                 ...p,
                 gamesPlayed,
                 rawAvg,
-                weeklyAvg: rawAvg, // For now, use lifetime avg as weekly proxy
+                weeklyAvg: rawAvg,
                 lastPlayedVal,
                 playedThisWeek,
                 rank: 0
               };
             });
 
+          console.log("Processed players:", allPlayers.length);
           updateLeaderboardDisplay();
         } catch (err) {
           console.error("Leaderboard load failed:", err);
-          renderState("Failed to load leaderboard.");
+          console.error("Error details:", err.message || err);
+          renderState(`Error: ${err.message || "Failed to load leaderboard"}`);
         } finally {
           setLoading(false);
         }
